@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Patch, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Patch, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { UsersService } from './users.service';
@@ -21,6 +21,12 @@ export class UsersController {
   @Patch()
   async update(@CurrentUser() current: { userId: string }, @Body() dto: UpdateProfileDto) {
     const user = await this.users.updateProfile(current.userId, dto);
+    return this.users.toAuthUser(user);
+  }
+
+  @Delete('github')
+  async unbindGithub(@CurrentUser() current: { userId: string }) {
+    const user = await this.users.unbindGithub(current.userId);
     return this.users.toAuthUser(user);
   }
 }
