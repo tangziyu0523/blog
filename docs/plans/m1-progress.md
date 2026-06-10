@@ -1,7 +1,10 @@
 # M1 Auth — 执行进度
 
 > 更新：2026-06-10｜分支：`feat/m1-auth`｜计划：[../superpowers/plans/2026-06-10-m1-auth.md](../superpowers/plans/2026-06-10-m1-auth.md)
-> 状态：**17/22 任务完成，`pnpm verify` 全绿**；T18–T22 阻塞于 Docker 未启动。
+> 状态：**✅ 22/22 任务全部完成。`pnpm verify` 全绿（36 单测）+ e2e 15 个全过（6 套件）。**
+>
+> 集成阶段修正：refresh cookie 的 Path 从 `/auth/refresh` 收窄改为 `/auth`——否则登出收不到 refresh cookie（RFC 6265 路径匹配），由 e2e 暴露（commit `75ee7fa`）。
+> 另：T1–T17 子代理只跑 typecheck+test 漏掉 lint，累积的 40 个 ESLint 错误已统一修复（commit `e56f17b`）。
 
 ## ✅ 已完成（T1–T17，均已提交）
 
