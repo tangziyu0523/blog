@@ -81,7 +81,11 @@
     "rootDir": "src",
     "testRegex": ".*\\.spec\\.ts$",
     "transform": {
-      "^.+\\.(t|j)s$": "ts-jest"
+      "^.+\\.(t|j)s$": ["ts-jest", { "tsconfig": { "module": "CommonJS", "moduleResolution": "node", "esModuleInterop": true, "allowSyntheticDefaultImports": true, "experimentalDecorators": true, "emitDecoratorMetadata": true, "strict": true }, "diagnostics": false }]
+    },
+    "transformIgnorePatterns": [],
+    "moduleNameMapper": {
+      "^@blog/shared$": "<rootDir>/../../../packages/shared/src/index.ts"
     },
     "collectCoverageFrom": [
       "**/*.(t|j)s"
