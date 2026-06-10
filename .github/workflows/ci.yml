@@ -1,0 +1,81 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        # 版本从 package.json 的 packageManager 字段读取
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Verify (lint + typecheck + test)
+        run: pnpm verify
+
+      - name: Build
+        run: pnpm build
+
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: blog
+          POSTGRES_PASSWORD: blog
+          POSTGRES_DB: blog_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U blog -d blog_test"
+          --health-interval 5s --health-timeout 3s --health-retries 10
+      redis:
+        image: redis:7-alpine
+        ports: ['6379:6379']
+        options: >-
+          --health-cmd "redis-cli ping" --health-interval 5s --health-timeout 3s --health-retries 10
+    env:
+      DATABASE_URL: postgresql://blog:blog@localhost:5432/blog_test
+      REDIS_URL: redis://localhost:6379
+      JWT_ACCESS_SECRET: test-access-secret-test-access-secret
+      JWT_REFRESH_SECRET: test-refresh-secret-test-refresh-secret
+      GITHUB_CLIENT_ID: test
+      GITHUB_CLIENT_SECRET: test
+      GITHUB_CALLBACK_URL: http://localhost:3001/auth/github/callback
+      WEB_ORIGIN: http://localhost:3000
+      S3_ENDPOINT: http://localhost:9000
+      S3_ACCESS_KEY: test
+      S3_SECRET_KEY: test
+      S3_BUCKET: blog
+      COOKIE_DOMAIN: localhost
+      NODE_ENV: test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @blog/shared build
+      - run: pnpm --filter @blog/api exec prisma generate
+      - run: pnpm --filter @blog/api exec prisma migrate deploy
+      - run: pnpm --filter @blog/api test:e2e
