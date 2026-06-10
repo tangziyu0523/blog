@@ -187,7 +187,7 @@ POST /me/avatar/confirm {key}
 
 ### 6.2 安全清单
 
-- **Cookie**：`httpOnly + Secure + SameSite=Lax`；access/refresh 分两个 Cookie，refresh `Path=/auth/refresh` 收窄作用域。
+- **Cookie**：`httpOnly + Secure + SameSite=Lax`；access/refresh 分两个 Cookie。access `Path=/`；refresh `Path=/auth` 收窄到 auth 命名空间——既能被 `/auth/refresh` 也能被 `/auth/logout`（登出需读 refresh 以吊销会话）接收，且永不发往 `/me` 等应用路由。（注：初版设计为 `/auth/refresh`，但那样登出收不到 refresh cookie，集成测试已暴露并修正。）
 - **CSRF**：SameSite=Lax 挡跨站；状态变更走 POST；OAuth 用 `state` + Redis 校验。
 - **CORS**：仅白名单前端域 + `credentials: true`。
 - **限流**：`@nestjs/throttler`，登录/注册严格限流（IP + email 维度），presign 限流防刷。

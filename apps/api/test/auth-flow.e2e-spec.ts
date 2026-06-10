@@ -34,47 +34,28 @@ describe('Auth flow (e2e)', () => {
     ).toBe(true);
     expect(
       cookies.some(
-        (c) =>
-          c.startsWith('refresh_token=') && c.includes('Path=/auth/refresh'),
+        (c) => c.startsWith('refresh_token=') && c.includes('Path=/auth'),
       ),
     ).toBe(true);
   });
 
   it('register -> /me -> refresh -> logout; old refresh dead after logout', async () => {
-    const server = app.getHttpServer();
-    const agent = request.agent(server);
+    const agent = request.agent(app.getHttpServer());
 
-    // register — stores access_token (Path=/) and refresh_token (Path=/auth/refresh) in jar
-    const regRes = await agent.post('/auth/register').send(creds).expect(201);
+    // register — stores access_token (Path=/) and refresh_token (Path=/auth) in jar
+    await agent.post('/auth/register').send(creds).expect(201);
 
     // /me uses access_token (Path=/) — agent sends it automatically
     await agent.get('/me').expect(200);
 
-    // rotate tokens; agent sends refresh_token to /auth/refresh (same path prefix)
-    const refreshRes = await agent.post('/auth/refresh').expect(200);
+    // rotate tokens; refresh_token (Path=/auth) is sent to /auth/refresh
+    await agent.post('/auth/refresh').expect(200);
 
-    // The refresh_token cookie has Path=/auth/refresh so the agent's cookie jar
-    // won't include it for /auth/logout.  Extract it explicitly from the latest
-    // Set-Cookie header (refresh gives a new pair) and pass it by hand.
-    const allSetCookies = [
-      ...((regRes.headers['set-cookie'] as unknown as string[] | undefined) ??
-        []),
-      ...((refreshRes.headers['set-cookie'] as unknown as
-        | string[]
-        | undefined) ?? []),
-    ];
-    const refreshCookie = allSetCookies
-      .filter((c) => c.startsWith('refresh_token='))
-      .at(-1)
-      ?.split(';')[0]; // e.g. "refresh_token=<jwt>"
+    // logout — refresh_token (Path=/auth) is sent to /auth/logout by a real
+    // cookie jar, exactly as a browser would; the session is then revoked
+    await agent.post('/auth/logout').expect(204);
 
-    expect(refreshCookie).toBeDefined();
-    await request(server)
-      .post('/auth/logout')
-      .set('Cookie', refreshCookie!)
-      .expect(204);
-
-    // After logout the refresh token must be revoked — agent still has old refresh_token
+    // After logout the (rotated) refresh token must be dead
     await agent.post('/auth/refresh').expect(401);
   });
 

@@ -8,9 +8,9 @@ describe('cookies', () => {
     expect(opts.path).toBe('/');
   });
 
-  it('refresh cookie path is scoped to /auth/refresh', () => {
+  it('refresh cookie path is scoped to the /auth namespace', () => {
     const opts = buildCookieOptions('refresh', 'example.com', false);
-    expect(opts.path).toBe('/auth/refresh');
+    expect(opts.path).toBe('/auth');
   });
 
   it('secure is true in production', () => {
