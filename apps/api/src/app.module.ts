@@ -5,12 +5,14 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { RedisModule } from './redis/redis.module';
 import { PrismaModule } from './prisma/prisma.module';
+import { UsersModule } from './users/users.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true, validate: validateEnv }),
     RedisModule,
     PrismaModule,
+    UsersModule,
   ],
   controllers: [AppController],
   providers: [AppService],
