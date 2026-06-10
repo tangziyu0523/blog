@@ -23,6 +23,9 @@ importers:
       '@aws-sdk/s3-request-presigner':
         specifier: ^3.1065.0
         version: 3.1065.0
+      '@blog/shared':
+        specifier: workspace:*
+        version: link:../../packages/shared
       '@nestjs/common':
         specifier: ^11.0.1
         version: 11.1.26(reflect-metadata@0.2.2)(rxjs@7.8.2)
