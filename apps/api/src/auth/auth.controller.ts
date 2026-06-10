@@ -2,6 +2,7 @@ import { Body, Controller, Delete, Get, Post, Query, Req, Res, UseGuards, HttpCo
 import { ConfigService } from '@nestjs/config';
 import { randomUUID } from 'node:crypto';
 import type { Request, Response } from 'express';
+import { Throttle } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
 import { TokenService, type TokenPair } from './token.service';
 import { RegisterDto } from './dto/register.dto';
@@ -33,6 +34,7 @@ export class AuthController {
     res.cookie(REFRESH_COOKIE, pair.refreshToken, buildCookieOptions('refresh', domain, secure));
   }
 
+  @Throttle({ default: { ttl: 60_000, limit: 10 } })
   @Post('register')
   async register(@Body() dto: RegisterDto, @Res({ passthrough: true }) res: Response) {
     const { user, tokens } = await this.auth.register(dto);
@@ -40,6 +42,7 @@ export class AuthController {
     return user;
   }
 
+  @Throttle({ default: { ttl: 60_000, limit: 10 } })
   @Post('login')
   @HttpCode(200)
   async login(@Body() dto: LoginDto, @Res({ passthrough: true }) res: Response) {
@@ -70,6 +73,7 @@ export class AuthController {
     res.clearCookie(REFRESH_COOKIE, buildCookieOptions('refresh', domain, secure));
   }
 
+  @Throttle({ default: { ttl: 60_000, limit: 10 } })
   @Get('github')
   async githubStart(@Res() res: Response, @Query('redirect') redirect?: string): Promise<void> {
     const state = randomUUID();
