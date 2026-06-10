@@ -11,9 +11,22 @@ describe('AuthService.handleGithubLogin', () => {
     findByGithubId: jest.fn(),
     findByEmail: jest.fn(),
     createGithubUser: jest.fn(),
-    toAuthUser: jest.fn((u) => ({ id: u.id, email: u.email, nickname: u.nickname, bio: null, avatarUrl: null, githubLogin: u.githubLogin })),
+    toAuthUser: jest.fn((u) => ({
+      id: u.id,
+      email: u.email,
+      nickname: u.nickname,
+      bio: null,
+      avatarUrl: null,
+      githubLogin: u.githubLogin,
+    })),
   };
-  const tokens = { issuePair: jest.fn(async () => ({ accessToken: 'a', refreshToken: 'r', refreshTokenId: 't' })) };
+  const tokens = {
+    issuePair: jest.fn(async () => ({
+      accessToken: 'a',
+      refreshToken: 'r',
+      refreshTokenId: 't',
+    })),
+  };
 
   beforeEach(async () => {
     jest.clearAllMocks();
@@ -32,7 +45,12 @@ describe('AuthService.handleGithubLogin', () => {
   const profile = { githubId: 'gh1', githubLogin: 'octocat', email: 'a@b.com' };
 
   it('logs in when githubId already bound', async () => {
-    users.findByGithubId.mockResolvedValue({ id: 'u1', email: 'a@b.com', nickname: 'A', githubLogin: 'octocat' });
+    users.findByGithubId.mockResolvedValue({
+      id: 'u1',
+      email: 'a@b.com',
+      nickname: 'A',
+      githubLogin: 'octocat',
+    });
     const out = await service.handleGithubLogin(profile);
     expect(out.kind).toBe('login');
     expect(users.createGithubUser).not.toHaveBeenCalled();
@@ -41,7 +59,12 @@ describe('AuthService.handleGithubLogin', () => {
   it('creates + logs in when githubId unbound and email free', async () => {
     users.findByGithubId.mockResolvedValue(null);
     users.findByEmail.mockResolvedValue(null);
-    users.createGithubUser.mockResolvedValue({ id: 'u2', email: 'a@b.com', nickname: 'octocat', githubLogin: 'octocat' });
+    users.createGithubUser.mockResolvedValue({
+      id: 'u2',
+      email: 'a@b.com',
+      nickname: 'octocat',
+      githubLogin: 'octocat',
+    });
     const out = await service.handleGithubLogin(profile);
     expect(out.kind).toBe('login');
     expect(users.createGithubUser).toHaveBeenCalled();

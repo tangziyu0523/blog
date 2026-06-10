@@ -9,11 +9,16 @@ describe('TokenService', () => {
   let service: TokenService;
   const store = new Map<string, string>();
   const redisMock = {
-    set: jest.fn(async (k: string, v: string) => { store.set(k, v); return 'OK'; }),
+    set: jest.fn(async (k: string, v: string) => {
+      store.set(k, v);
+      return 'OK';
+    }),
     get: jest.fn(async (k: string) => store.get(k) ?? null),
     del: jest.fn(async (...keys: string[]) => {
       let count = 0;
-      for (const k of keys) { if (store.delete(k)) count++; }
+      for (const k of keys) {
+        if (store.delete(k)) count++;
+      }
       return count;
     }),
     keys: jest.fn(async (pat: string) => {
@@ -23,7 +28,12 @@ describe('TokenService', () => {
   };
   const configMock = {
     getOrThrow: (k: string) =>
-      ({ JWT_ACCESS_SECRET: 'a'.repeat(32), JWT_REFRESH_SECRET: 'b'.repeat(32) } as Record<string, string>)[k],
+      (
+        ({
+          JWT_ACCESS_SECRET: 'a'.repeat(32),
+          JWT_REFRESH_SECRET: 'b'.repeat(32),
+        }) as Record<string, string>
+      )[k],
   };
 
   beforeEach(async () => {
@@ -33,7 +43,10 @@ describe('TokenService', () => {
       imports: [JwtModule.register({})],
       providers: [
         TokenService,
-        { provide: RedisService, useValue: redisMock as unknown as RedisService },
+        {
+          provide: RedisService,
+          useValue: redisMock,
+        },
         { provide: ConfigService, useValue: configMock },
       ],
     }).compile();
@@ -48,7 +61,11 @@ describe('TokenService', () => {
 
   it('rotate succeeds for a valid current refresh token and deletes old tid', async () => {
     const pair = await service.issuePair('u1');
-    const next = await service.rotate('u1', pair.refreshTokenId, pair.refreshToken);
+    const next = await service.rotate(
+      'u1',
+      pair.refreshTokenId,
+      pair.refreshToken,
+    );
     expect(store.has(`refresh:u1:${pair.refreshTokenId}`)).toBe(false);
     expect(store.has(`refresh:u1:${next.refreshTokenId}`)).toBe(true);
   });
@@ -57,7 +74,9 @@ describe('TokenService', () => {
     const pair = await service.issuePair('u1');
     await service.issuePair('u1');
     await service.rotate('u1', pair.refreshTokenId, pair.refreshToken);
-    await expect(service.rotate('u1', pair.refreshTokenId, pair.refreshToken)).rejects.toMatchObject({
+    await expect(
+      service.rotate('u1', pair.refreshTokenId, pair.refreshToken),
+    ).rejects.toMatchObject({
       code: ErrorCode.REFRESH_REUSE_DETECTED,
     });
     const remaining = await redisMock.keys('refresh:u1:*');

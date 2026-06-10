@@ -27,6 +27,8 @@ describe('validateEnv', () => {
   });
 
   it('throws when JWT secret is too short', () => {
-    expect(() => validateEnv({ ...base, JWT_ACCESS_SECRET: 'short' })).toThrow();
+    expect(() =>
+      validateEnv({ ...base, JWT_ACCESS_SECRET: 'short' }),
+    ).toThrow();
   });
 });

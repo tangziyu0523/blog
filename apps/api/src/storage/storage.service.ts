@@ -36,7 +36,11 @@ export class StorageService {
     const key = `avatars/${userId}/${randomUUID()}.webp`;
     const url = await getSignedUrl(
       this.client,
-      new PutObjectCommand({ Bucket: this.bucket, Key: key, ContentType: 'image/webp' }),
+      new PutObjectCommand({
+        Bucket: this.bucket,
+        Key: key,
+        ContentType: 'image/webp',
+      }),
       { expiresIn: 300 },
     );
     return { url, key };
@@ -44,19 +48,33 @@ export class StorageService {
 
   async confirm(userId: string, key: string): Promise<string> {
     if (!key.startsWith(`avatars/${userId}/`)) {
-      throw new AppError(ErrorCode.INVALID_UPLOAD, 400, 'Key does not belong to this user');
+      throw new AppError(
+        ErrorCode.INVALID_UPLOAD,
+        400,
+        'Key does not belong to this user',
+      );
     }
     let head: HeadObjectCommandOutput;
     try {
-      head = await this.client.send(new HeadObjectCommand({ Bucket: this.bucket, Key: key }));
+      head = await this.client.send(
+        new HeadObjectCommand({ Bucket: this.bucket, Key: key }),
+      );
     } catch {
-      throw new AppError(ErrorCode.INVALID_UPLOAD, 400, 'Uploaded object not found');
+      throw new AppError(
+        ErrorCode.INVALID_UPLOAD,
+        400,
+        'Uploaded object not found',
+      );
     }
     if ((head.ContentLength ?? 0) > MAX_BYTES) {
       throw new AppError(ErrorCode.INVALID_UPLOAD, 400, 'File too large');
     }
     if (!head.ContentType || !ALLOWED_TYPES.has(head.ContentType)) {
-      throw new AppError(ErrorCode.INVALID_UPLOAD, 400, 'Unsupported content type');
+      throw new AppError(
+        ErrorCode.INVALID_UPLOAD,
+        400,
+        'Unsupported content type',
+      );
     }
     return key;
   }

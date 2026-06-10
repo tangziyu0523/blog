@@ -19,7 +19,10 @@ export class StorageController {
   }
 
   @Post('confirm')
-  async confirm(@CurrentUser() current: { userId: string }, @Body() dto: ConfirmAvatarDto) {
+  async confirm(
+    @CurrentUser() current: { userId: string },
+    @Body() dto: ConfirmAvatarDto,
+  ) {
     const key = await this.storage.confirm(current.userId, dto.key);
     const user = await this.users.setAvatar(current.userId, key);
     return this.users.toAuthUser(user);

@@ -11,7 +11,10 @@ interface RefreshPayload {
 }
 
 @Injectable()
-export class JwtRefreshStrategy extends PassportStrategy(Strategy, 'jwt-refresh') {
+export class JwtRefreshStrategy extends PassportStrategy(
+  Strategy,
+  'jwt-refresh',
+) {
   constructor(config: ConfigService) {
     const opts: StrategyOptionsWithRequest = {
       jwtFromRequest: (req: Request): string | null =>
@@ -23,7 +26,10 @@ export class JwtRefreshStrategy extends PassportStrategy(Strategy, 'jwt-refresh'
     super(opts);
   }
 
-  validate(req: Request, payload: RefreshPayload): { userId: string; tid: string; token: string } {
+  validate(
+    req: Request,
+    payload: RefreshPayload,
+  ): { userId: string; tid: string; token: string } {
     const token = (req.cookies?.[REFRESH_COOKIE] as string | undefined) ?? '';
     return { userId: payload.sub, tid: payload.tid, token };
   }

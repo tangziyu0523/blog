@@ -13,7 +13,14 @@ import { GithubStrategy } from './strategies/github.strategy';
 @Module({
   imports: [UsersModule, PassportModule, JwtModule.register({})],
   controllers: [AuthController],
-  providers: [AuthService, PasswordService, TokenService, JwtStrategy, JwtRefreshStrategy, GithubStrategy],
+  providers: [
+    AuthService,
+    PasswordService,
+    TokenService,
+    JwtStrategy,
+    JwtRefreshStrategy,
+    GithubStrategy,
+  ],
   exports: [AuthService, TokenService],
 })
 export class AuthModule {}

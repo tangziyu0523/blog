@@ -3,7 +3,12 @@ import { AllExceptionsFilter } from './all-exceptions.filter';
 import { AppError } from './app-error';
 import { ErrorCode } from '@blog/shared';
 
-function mockHost(): { host: ArgumentsHost; json: jest.Mock; status: jest.Mock; setHeader: jest.Mock } {
+function mockHost(): {
+  host: ArgumentsHost;
+  json: jest.Mock;
+  status: jest.Mock;
+  setHeader: jest.Mock;
+} {
   const json = jest.fn();
   const setHeader = jest.fn();
   const status = jest.fn().mockReturnValue({ json });
@@ -32,7 +37,9 @@ describe('AllExceptionsFilter', () => {
   it('applies AppError headers (Retry-After)', () => {
     const { host, setHeader } = mockHost();
     new AllExceptionsFilter().catch(
-      new AppError(ErrorCode.ACCOUNT_LOCKED, 423, 'locked', { 'Retry-After': '900' }),
+      new AppError(ErrorCode.ACCOUNT_LOCKED, 423, 'locked', {
+        'Retry-After': '900',
+      }),
       host,
     );
     expect(setHeader).toHaveBeenCalledWith('Retry-After', '900');

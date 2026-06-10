@@ -40,13 +40,24 @@ export class TokenService {
     const tid = randomUUID();
     const accessToken = await this.jwt.signAsync(
       { sub: userId },
-      { secret: this.config.getOrThrow('JWT_ACCESS_SECRET'), expiresIn: ACCESS_TTL },
+      {
+        secret: this.config.getOrThrow('JWT_ACCESS_SECRET'),
+        expiresIn: ACCESS_TTL,
+      },
     );
     const refreshToken = await this.jwt.signAsync(
       { sub: userId, tid },
-      { secret: this.config.getOrThrow('JWT_REFRESH_SECRET'), expiresIn: REFRESH_TTL_SECONDS },
+      {
+        secret: this.config.getOrThrow('JWT_REFRESH_SECRET'),
+        expiresIn: REFRESH_TTL_SECONDS,
+      },
     );
-    await this.redis.set(this.key(userId, tid), this.hashToken(refreshToken), 'EX', REFRESH_TTL_SECONDS);
+    await this.redis.set(
+      this.key(userId, tid),
+      this.hashToken(refreshToken),
+      'EX',
+      REFRESH_TTL_SECONDS,
+    );
     return { accessToken, refreshToken, refreshTokenId: tid };
   }
 
@@ -65,11 +76,19 @@ export class TokenService {
     }
   }
 
-  async rotate(userId: string, tid: string, presentedToken: string): Promise<TokenPair> {
+  async rotate(
+    userId: string,
+    tid: string,
+    presentedToken: string,
+  ): Promise<TokenPair> {
     const stored = await this.redis.get(this.key(userId, tid));
     if (stored === null || stored !== this.hashToken(presentedToken)) {
       await this.revokeAll(userId);
-      throw new AppError(ErrorCode.REFRESH_REUSE_DETECTED, 401, 'Refresh token reuse detected; all sessions revoked');
+      throw new AppError(
+        ErrorCode.REFRESH_REUSE_DETECTED,
+        401,
+        'Refresh token reuse detected; all sessions revoked',
+      );
     }
     await this.redis.del(this.key(userId, tid));
     return this.issuePair(userId);

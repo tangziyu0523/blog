@@ -6,7 +6,9 @@ import { ErrorCode } from '@blog/shared';
 const headMock = jest.fn();
 jest.mock('@aws-sdk/client-s3', () => {
   return {
-    S3Client: jest.fn().mockImplementation(() => ({ send: (cmd: unknown) => headMock(cmd) })),
+    S3Client: jest
+      .fn()
+      .mockImplementation(() => ({ send: (cmd: unknown) => headMock(cmd) })),
     HeadObjectCommand: jest.fn().mockImplementation((input) => ({ input })),
     PutObjectCommand: jest.fn().mockImplementation((input) => ({ input })),
   };
@@ -17,7 +19,14 @@ jest.mock('@aws-sdk/s3-request-presigner', () => ({
 
 const config = {
   getOrThrow: (k: string) =>
-    ({ S3_ENDPOINT: 'http://localhost:9000', S3_ACCESS_KEY: 'x', S3_SECRET_KEY: 'y', S3_BUCKET: 'blog' } as Record<string, string>)[k],
+    (
+      ({
+        S3_ENDPOINT: 'http://localhost:9000',
+        S3_ACCESS_KEY: 'x',
+        S3_SECRET_KEY: 'y',
+        S3_BUCKET: 'blog',
+      }) as Record<string, string>
+    )[k],
 };
 
 describe('StorageService', () => {
@@ -37,21 +46,35 @@ describe('StorageService', () => {
   });
 
   it('confirm rejects a key not owned by the user', async () => {
-    await expect(service.confirm('u1', 'avatars/u2/abc.webp')).rejects.toMatchObject({ code: ErrorCode.INVALID_UPLOAD });
+    await expect(
+      service.confirm('u1', 'avatars/u2/abc.webp'),
+    ).rejects.toMatchObject({ code: ErrorCode.INVALID_UPLOAD });
   });
 
   it('confirm rejects when object is missing', async () => {
     headMock.mockRejectedValue(new Error('NotFound'));
-    await expect(service.confirm('u1', 'avatars/u1/abc.webp')).rejects.toMatchObject({ code: ErrorCode.INVALID_UPLOAD });
+    await expect(
+      service.confirm('u1', 'avatars/u1/abc.webp'),
+    ).rejects.toMatchObject({ code: ErrorCode.INVALID_UPLOAD });
   });
 
   it('confirm rejects when too large', async () => {
-    headMock.mockResolvedValue({ ContentLength: 3_000_000, ContentType: 'image/webp' });
-    await expect(service.confirm('u1', 'avatars/u1/abc.webp')).rejects.toMatchObject({ code: ErrorCode.INVALID_UPLOAD });
+    headMock.mockResolvedValue({
+      ContentLength: 3_000_000,
+      ContentType: 'image/webp',
+    });
+    await expect(
+      service.confirm('u1', 'avatars/u1/abc.webp'),
+    ).rejects.toMatchObject({ code: ErrorCode.INVALID_UPLOAD });
   });
 
   it('confirm accepts a valid object and returns the key', async () => {
-    headMock.mockResolvedValue({ ContentLength: 1_000, ContentType: 'image/webp' });
-    await expect(service.confirm('u1', 'avatars/u1/abc.webp')).resolves.toBe('avatars/u1/abc.webp');
+    headMock.mockResolvedValue({
+      ContentLength: 1_000,
+      ContentType: 'image/webp',
+    });
+    await expect(service.confirm('u1', 'avatars/u1/abc.webp')).resolves.toBe(
+      'avatars/u1/abc.webp',
+    );
   });
 });

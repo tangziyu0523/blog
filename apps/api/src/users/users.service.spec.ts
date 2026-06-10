@@ -16,7 +16,10 @@ describe('UsersService', () => {
   beforeEach(async () => {
     jest.resetAllMocks();
     const moduleRef = await Test.createTestingModule({
-      providers: [UsersService, { provide: PrismaService, useValue: prismaMock }],
+      providers: [
+        UsersService,
+        { provide: PrismaService, useValue: prismaMock },
+      ],
     }).compile();
     service = moduleRef.get(UsersService);
   });
@@ -24,13 +27,20 @@ describe('UsersService', () => {
   it('findByEmail delegates to prisma', async () => {
     prismaMock.user.findUnique.mockResolvedValue({ id: 'u1' });
     const u = await service.findByEmail('a@b.com');
-    expect(prismaMock.user.findUnique).toHaveBeenCalledWith({ where: { email: 'a@b.com' } });
+    expect(prismaMock.user.findUnique).toHaveBeenCalledWith({
+      where: { email: 'a@b.com' },
+    });
     expect(u).toEqual({ id: 'u1' });
   });
 
   it('bindGithub rejects when githubId already taken by another user', async () => {
-    prismaMock.user.findUnique.mockResolvedValue({ id: 'other', githubId: 'gh1' });
-    await expect(service.bindGithub('u1', 'gh1', 'octocat')).rejects.toMatchObject({
+    prismaMock.user.findUnique.mockResolvedValue({
+      id: 'other',
+      githubId: 'gh1',
+    });
+    await expect(
+      service.bindGithub('u1', 'gh1', 'octocat'),
+    ).rejects.toMatchObject({
       code: ErrorCode.GITHUB_ALREADY_BOUND,
     });
   });
@@ -46,14 +56,20 @@ describe('UsersService', () => {
   });
 
   it('unbindGithub rejects pure-github account (no password)', async () => {
-    prismaMock.user.findUnique.mockResolvedValue({ id: 'u1', passwordHash: null });
+    prismaMock.user.findUnique.mockResolvedValue({
+      id: 'u1',
+      passwordHash: null,
+    });
     await expect(service.unbindGithub('u1')).rejects.toMatchObject({
       code: ErrorCode.CANNOT_UNBIND_LAST_METHOD,
     });
   });
 
   it('unbindGithub clears github fields for password account', async () => {
-    prismaMock.user.findUnique.mockResolvedValue({ id: 'u1', passwordHash: 'h' });
+    prismaMock.user.findUnique.mockResolvedValue({
+      id: 'u1',
+      passwordHash: 'h',
+    });
     prismaMock.user.update.mockResolvedValue({ id: 'u1', githubId: null });
     await service.unbindGithub('u1');
     expect(prismaMock.user.update).toHaveBeenCalledWith({

@@ -33,13 +33,28 @@ export class AuthService {
     private readonly redis: RedisService,
   ) {}
 
-  async register(dto: { email: string; password: string; nickname: string }): Promise<AuthResult> {
+  async register(dto: {
+    email: string;
+    password: string;
+    nickname: string;
+  }): Promise<AuthResult> {
     if (await this.users.findByEmail(dto.email)) {
-      throw new AppError(ErrorCode.EMAIL_TAKEN, 409, 'Email already registered');
+      throw new AppError(
+        ErrorCode.EMAIL_TAKEN,
+        409,
+        'Email already registered',
+      );
     }
     const passwordHash = await this.password.hash(dto.password);
-    const user = await this.users.createPasswordUser({ email: dto.email, passwordHash, nickname: dto.nickname });
-    return { user: this.users.toAuthUser(user), tokens: await this.tokens.issuePair(user.id) };
+    const user = await this.users.createPasswordUser({
+      email: dto.email,
+      passwordHash,
+      nickname: dto.nickname,
+    });
+    return {
+      user: this.users.toAuthUser(user),
+      tokens: await this.tokens.issuePair(user.id),
+    };
   }
 
   async login(dto: { email: string; password: string }): Promise<AuthResult> {
@@ -47,26 +62,48 @@ export class AuthService {
     const fails = Number((await this.redis.get(failKey)) ?? 0);
     if (fails >= MAX_FAILS) {
       const ttl = await this.redis.ttl(failKey);
-      throw new AppError(ErrorCode.ACCOUNT_LOCKED, 423, 'Account temporarily locked', {
-        'Retry-After': String(ttl > 0 ? ttl : LOCK_WINDOW_SECONDS),
-      });
+      throw new AppError(
+        ErrorCode.ACCOUNT_LOCKED,
+        423,
+        'Account temporarily locked',
+        {
+          'Retry-After': String(ttl > 0 ? ttl : LOCK_WINDOW_SECONDS),
+        },
+      );
     }
 
     const user = await this.users.findByEmail(dto.email);
-    if (!user || !user.passwordHash || !(await this.password.verify(user.passwordHash, dto.password))) {
+    if (
+      !user ||
+      !user.passwordHash ||
+      !(await this.password.verify(user.passwordHash, dto.password))
+    ) {
       const count = await this.redis.incr(failKey);
       if (count === 1) await this.redis.expire(failKey, LOCK_WINDOW_SECONDS);
-      throw new AppError(ErrorCode.INVALID_CREDENTIALS, 401, 'Invalid email or password');
+      throw new AppError(
+        ErrorCode.INVALID_CREDENTIALS,
+        401,
+        'Invalid email or password',
+      );
     }
 
     await this.redis.del(failKey);
-    return { user: this.users.toAuthUser(user), tokens: await this.tokens.issuePair(user.id) };
+    return {
+      user: this.users.toAuthUser(user),
+      tokens: await this.tokens.issuePair(user.id),
+    };
   }
 
   async handleGithubLogin(profile: GithubProfile): Promise<GithubLoginOutcome> {
     const bound = await this.users.findByGithubId(profile.githubId);
     if (bound) {
-      return { kind: 'login', result: { user: this.users.toAuthUser(bound), tokens: await this.tokens.issuePair(bound.id) } };
+      return {
+        kind: 'login',
+        result: {
+          user: this.users.toAuthUser(bound),
+          tokens: await this.tokens.issuePair(bound.id),
+        },
+      };
     }
     const emailOwner = await this.users.findByEmail(profile.email);
     if (emailOwner) {
@@ -78,6 +115,12 @@ export class AuthService {
       githubId: profile.githubId,
       githubLogin: profile.githubLogin,
     });
-    return { kind: 'login', result: { user: this.users.toAuthUser(created), tokens: await this.tokens.issuePair(created.id) } };
+    return {
+      kind: 'login',
+      result: {
+        user: this.users.toAuthUser(created),
+        tokens: await this.tokens.issuePair(created.id),
+      },
+    };
   }
 }

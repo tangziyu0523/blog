@@ -9,7 +9,9 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
     if (user) return user;
     const name = info instanceof Error ? info.name : '';
     throw new AppError(
-      name === 'TokenExpiredError' ? ErrorCode.TOKEN_EXPIRED : ErrorCode.TOKEN_INVALID,
+      name === 'TokenExpiredError'
+        ? ErrorCode.TOKEN_EXPIRED
+        : ErrorCode.TOKEN_INVALID,
       401,
       'Authentication required',
     );
