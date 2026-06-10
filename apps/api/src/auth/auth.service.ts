@@ -14,6 +14,16 @@ export interface AuthResult {
   tokens: TokenPair;
 }
 
+export interface GithubProfile {
+  githubId: string;
+  githubLogin: string;
+  email: string;
+}
+
+export type GithubLoginOutcome =
+  | { kind: 'login'; result: AuthResult }
+  | { kind: 'bind_required' };
+
 @Injectable()
 export class AuthService {
   constructor(
@@ -51,5 +61,23 @@ export class AuthService {
 
     await this.redis.del(failKey);
     return { user: this.users.toAuthUser(user), tokens: await this.tokens.issuePair(user.id) };
+  }
+
+  async handleGithubLogin(profile: GithubProfile): Promise<GithubLoginOutcome> {
+    const bound = await this.users.findByGithubId(profile.githubId);
+    if (bound) {
+      return { kind: 'login', result: { user: this.users.toAuthUser(bound), tokens: await this.tokens.issuePair(bound.id) } };
+    }
+    const emailOwner = await this.users.findByEmail(profile.email);
+    if (emailOwner) {
+      return { kind: 'bind_required' };
+    }
+    const created = await this.users.createGithubUser({
+      email: profile.email,
+      nickname: profile.githubLogin,
+      githubId: profile.githubId,
+      githubLogin: profile.githubLogin,
+    });
+    return { kind: 'login', result: { user: this.users.toAuthUser(created), tokens: await this.tokens.issuePair(created.id) } };
   }
 }
