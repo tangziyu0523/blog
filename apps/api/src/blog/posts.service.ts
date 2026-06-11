@@ -1,0 +1,158 @@
+import { Injectable } from '@nestjs/common';
+import type { Prisma } from '@prisma/client';
+import { PrismaService } from '../prisma/prisma.service';
+import { AppError } from '../common/app-error';
+import { ErrorCode } from '@blog/shared';
+import { slugifyTitle, shortSuffix } from './slug';
+import { toSummary, toDetail, type PostWithAuthor } from './post.mapper';
+import type { PostDetail, PostSummary, Paginated } from '@blog/shared';
+
+interface CreateInput {
+  title: string;
+  contentMd: string;
+  tags?: string[];
+  summary?: string;
+}
+
+@Injectable()
+export class PostsService {
+  constructor(private readonly prisma: PrismaService) {}
+
+  private async uniqueSlug(title: string): Promise<string> {
+    const base = slugifyTitle(title);
+    let slug = base;
+    let attempts = 0;
+    while (await this.prisma.post.findUnique({ where: { slug } })) {
+      if (++attempts > 5) {
+        throw new AppError(
+          ErrorCode.SLUG_TAKEN,
+          500,
+          'Could not generate a unique slug',
+        );
+      }
+      slug = `${base}-${shortSuffix()}`;
+    }
+    return slug;
+  }
+
+  async create(authorId: string, input: CreateInput): Promise<PostDetail> {
+    const slug = await this.uniqueSlug(input.title);
+    const post = await this.prisma.post.create({
+      data: {
+        slug,
+        title: input.title,
+        contentMd: input.contentMd,
+        tags: input.tags ?? [],
+        summary: input.summary ?? null,
+        authorId,
+      },
+      include: { author: true },
+    });
+    return toDetail(post, false);
+  }
+
+  async list(opts: {
+    page: number;
+    pageSize: number;
+    mine: boolean;
+    userId?: string;
+  }): Promise<Paginated<PostSummary>> {
+    const where: Prisma.PostWhereInput =
+      opts.mine && opts.userId
+        ? { authorId: opts.userId }
+        : { status: 'PUBLISHED' };
+    const orderBy: Prisma.PostOrderByWithRelationInput = opts.mine
+      ? { updatedAt: 'desc' }
+      : { publishedAt: 'desc' };
+    const [rows, total] = await Promise.all([
+      this.prisma.post.findMany({
+        where,
+        orderBy,
+        skip: (opts.page - 1) * opts.pageSize,
+        take: opts.pageSize,
+        include: { author: true },
+      }),
+      this.prisma.post.count({ where }),
+    ]);
+    return {
+      items: (rows as PostWithAuthor[]).map(toSummary),
+      total,
+      page: opts.page,
+      pageSize: opts.pageSize,
+    };
+  }
+
+  async getBySlug(slug: string, viewerId?: string): Promise<PostDetail> {
+    const post = await this.prisma.post.findUnique({
+      where: { slug },
+      include: { author: true },
+    });
+    if (!post)
+      throw new AppError(ErrorCode.POST_NOT_FOUND, 404, 'Post not found');
+    if (post.status === 'DRAFT' && post.authorId !== viewerId) {
+      throw new AppError(ErrorCode.POST_NOT_FOUND, 404, 'Post not found');
+    }
+    const viewerLiked = viewerId
+      ? await this.viewerLiked(viewerId, post.id)
+      : false;
+    return toDetail(post, viewerLiked);
+  }
+
+  async update(
+    id: string,
+    userId: string,
+    input: {
+      title?: string;
+      contentMd?: string;
+      tags?: string[];
+      summary?: string;
+      status?: 'DRAFT' | 'PUBLISHED';
+    },
+  ): Promise<PostDetail> {
+    const existing = await this.prisma.post.findUnique({ where: { id } });
+    if (!existing)
+      throw new AppError(ErrorCode.POST_NOT_FOUND, 404, 'Post not found');
+    if (existing.authorId !== userId) {
+      throw new AppError(ErrorCode.FORBIDDEN, 403, 'Not your post');
+    }
+    const data: Prisma.PostUpdateInput = {};
+    if (input.title !== undefined) data.title = input.title;
+    if (input.contentMd !== undefined) data.contentMd = input.contentMd;
+    if (input.tags !== undefined) data.tags = input.tags;
+    if (input.summary !== undefined) data.summary = input.summary;
+    // publishedAt records the FIRST publish time and is immutable thereafter:
+    // first publish stamps now; re-publishing after a DRAFT reversion keeps the
+    // original date (existing.publishedAt). Reverting to DRAFT does NOT clear it —
+    // the public list filters on status, not publishedAt, so visibility is unaffected.
+    if (input.status === 'PUBLISHED' && existing.status !== 'PUBLISHED') {
+      data.status = 'PUBLISHED';
+      data.publishedAt = existing.publishedAt ?? new Date();
+    } else if (input.status === 'DRAFT') {
+      data.status = 'DRAFT';
+    }
+    const post = await this.prisma.post.update({
+      where: { id },
+      data,
+      include: { author: true },
+    });
+    const viewerLiked = await this.viewerLiked(userId, id);
+    return toDetail(post, viewerLiked);
+  }
+
+  async remove(id: string, userId: string): Promise<void> {
+    const existing = await this.prisma.post.findUnique({ where: { id } });
+    if (!existing)
+      throw new AppError(ErrorCode.POST_NOT_FOUND, 404, 'Post not found');
+    if (existing.authorId !== userId) {
+      throw new AppError(ErrorCode.FORBIDDEN, 403, 'Not your post');
+    }
+    await this.prisma.post.delete({ where: { id } });
+  }
+
+  private async viewerLiked(userId: string, postId: string): Promise<boolean> {
+    const row = await this.prisma.like.findUnique({
+      where: { userId_postId: { userId, postId } },
+    });
+    return !!row;
+  }
+}
