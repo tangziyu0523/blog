@@ -5,8 +5,10 @@
 > 设计：[../superpowers/specs/2026-06-11-m2-blog-core-design.md](../superpowers/specs/2026-06-11-m2-blog-core-design.md)
 > Next16 侦察：[../superpowers/notes/next16-recon.md](../superpowers/notes/next16-recon.md)
 >
-> 状态：**Task 1–14 完成（14/15）。只剩 Task 15（Tiptap 编辑器 + 最终验收门）。**
+> 状态：**全部 15 个 Task 完成（15/15）。最终门全绿：`pnpm verify` 8/8、e2e 20/20（7 套件）。剩：收尾分支（合并/PR，待用户定夺）。**
 > 执行方式：subagent-driven-development —— 每个 Task 派 implementer 子代理，再过 spec-review + code-quality-review 两道审查。
+>
+> ⚠️ **唯一未自动验证项**：Tiptap markdown **往返保真**（编辑器里写 → 存 → 重新打开是否一致）。e2e 是直接打 API 建文章，没走 Tiptap UI；spike 已确认 `tiptap-markdown@0.9` peer 是 `@tiptap/core ^3.0.1`（即 v3 版），build/typecheck 通过。建议 `pnpm dev` 后手动写一篇验证一次。
 
 ## 已完成
 
@@ -29,7 +31,19 @@
 - **Task 12+13** 详情页 + 点赞岛：`MarkdownRenderer`（Shiki，**fence 感知 tokenizer**，代码块内空行不再被切碎）+ `app/posts/[slug]/page.tsx`（`params` 是 Promise，已 await；`notFound()`）+ `LikeButton`（乐观切换，**回滚到点击前状态**，401→`/login`）— `17ec0d2`/`4755722` + 修正 `a3672ba`/`37d6b36`
 - **Task 14** 登录页 `app/login/page.tsx`（邮箱密码 → `/auth/login` → `refresh()` → `/`；GitHub 用纯 `<a href>` 到 `${API}/auth/github`）；加防重复提交 guard + 可访问 `<label>` — `b6b84d8` + `e1bd7b7`
 
-## ⛔ 未开始 — Task 15（Tiptap 编辑器 + 最终门）
+## ✅ Task 15 完成（Tiptap 编辑器 + 最终门）
+
+- spike 结论：用 **Tiptap**（`tiptap-markdown@0.9` 是 v3 版，peer `@tiptap/core ^3.0.1`），非 textarea fallback。
+- 文件：`lib/use-require-auth.ts`、`components/MarkdownEditor.tsx`（Tiptap + Markdown，存草稿/发布）、`app/editor/new/page.tsx`、`app/editor/[slug]/page.tsx`（按 **slug** 取数、按 **id** PATCH）。— `b7c4968`
+- 审查修正：编辑页 fetch 失败不再白屏（404→回首页，其他→提示）；新建+发布若 PATCH 失败，落到草稿编辑器可恢复（不留隐形孤儿）；提交前校验标题/正文非空。— `8911389`
+- 最终门：`pnpm verify` 8/8；`DATABASE_URL=…/blog_test … test:e2e` → 20/20。
+
+### 收尾（待用户定夺）
+走 `superpowers:finishing-a-development-branch`：把 `feat/m2-design-system` 合并到 `main` 或开 PR。合并/PR 是对外/不可逆动作，等用户确认再做。
+
+---
+
+## （历史）Task 15 原始恢复指令
 
 见 plan 的 Task 15。要做的文件：
 - `apps/web/src/lib/use-require-auth.ts` —— client 钩子，`!loading && !user` → `router.replace('/login')`
