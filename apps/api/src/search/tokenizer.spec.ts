@@ -2,7 +2,8 @@ import { tokenize, stripMarkdown } from './tokenizer';
 
 describe('stripMarkdown', () => {
   it('removes fenced code, inline code, link/image syntax and markers', () => {
-    const md = '# 标题\n\n```ts\nconst x = 1;\n```\n看[链接](http://a.com)和 `code` **粗**';
+    const md =
+      '# 标题\n\n```ts\nconst x = 1;\n```\n看[链接](http://a.com)和 `code` **粗**';
     const out = stripMarkdown(md);
     expect(out).not.toContain('```');
     expect(out).not.toContain('const x = 1;');

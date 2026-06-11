@@ -12,7 +12,9 @@ describe('buildHighlight', () => {
     expect(out).toContain('<b>性能</b>');
   });
   it('returns a leading snippet when no token matches', () => {
-    const out = buildHighlight('完全无关的一段文字内容用于回退展示', ['不存在']);
+    const out = buildHighlight('完全无关的一段文字内容用于回退展示', [
+      '不存在',
+    ]);
     expect(out.length).toBeGreaterThan(0);
     expect(out).not.toContain('<b>');
   });
