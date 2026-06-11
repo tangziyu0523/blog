@@ -1,9 +1,11 @@
 import { Injectable } from '@nestjs/common';
+import type { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
-import { slugifyTitle, shortSuffix } from './slug';
-import { toDetail } from './post.mapper';
 import { AppError } from '../common/app-error';
-import { ErrorCode, type PostDetail } from '@blog/shared';
+import { ErrorCode } from '@blog/shared';
+import { slugifyTitle, shortSuffix } from './slug';
+import { toSummary, toDetail, type PostWithAuthor } from './post.mapper';
+import type { PostDetail, PostSummary, Paginated } from '@blog/shared';
 
 interface CreateInput {
   title: string;
@@ -47,5 +49,109 @@ export class PostsService {
       include: { author: true },
     });
     return toDetail(post, false);
+  }
+
+  async list(opts: {
+    page: number;
+    pageSize: number;
+    mine: boolean;
+    userId?: string;
+  }): Promise<Paginated<PostSummary>> {
+    const where: Prisma.PostWhereInput =
+      opts.mine && opts.userId
+        ? { authorId: opts.userId }
+        : { status: 'PUBLISHED' };
+    const orderBy: Prisma.PostOrderByWithRelationInput = opts.mine
+      ? { updatedAt: 'desc' }
+      : { publishedAt: 'desc' };
+    const [rows, total] = await Promise.all([
+      this.prisma.post.findMany({
+        where,
+        orderBy,
+        skip: (opts.page - 1) * opts.pageSize,
+        take: opts.pageSize,
+        include: { author: true },
+      }),
+      this.prisma.post.count({ where }),
+    ]);
+    return {
+      items: (rows as PostWithAuthor[]).map(toSummary),
+      total,
+      page: opts.page,
+      pageSize: opts.pageSize,
+    };
+  }
+
+  async getBySlug(slug: string, viewerId?: string): Promise<PostDetail> {
+    const post = await this.prisma.post.findUnique({
+      where: { slug },
+      include: { author: true },
+    });
+    if (!post)
+      throw new AppError(ErrorCode.POST_NOT_FOUND, 404, 'Post not found');
+    if (post.status === 'DRAFT' && post.authorId !== viewerId) {
+      throw new AppError(ErrorCode.POST_NOT_FOUND, 404, 'Post not found');
+    }
+    const viewerLiked = viewerId
+      ? !!(await this.prisma.like.findUnique({
+          where: { userId_postId: { userId: viewerId, postId: post.id } },
+        }))
+      : false;
+    return toDetail(post, viewerLiked);
+  }
+
+  async update(
+    id: string,
+    userId: string,
+    input: {
+      title?: string;
+      contentMd?: string;
+      tags?: string[];
+      summary?: string;
+      status?: 'DRAFT' | 'PUBLISHED';
+    },
+  ): Promise<PostDetail> {
+    const existing = await this.prisma.post.findUnique({ where: { id } });
+    if (!existing)
+      throw new AppError(ErrorCode.POST_NOT_FOUND, 404, 'Post not found');
+    if (existing.authorId !== userId) {
+      throw new AppError(ErrorCode.FORBIDDEN, 403, 'Not your post');
+    }
+    const data: Prisma.PostUpdateInput = {};
+    if (input.title !== undefined) data.title = input.title;
+    if (input.contentMd !== undefined) data.contentMd = input.contentMd;
+    if (input.tags !== undefined) data.tags = input.tags;
+    if (input.summary !== undefined) data.summary = input.summary;
+    if (input.status === 'PUBLISHED' && existing.status !== 'PUBLISHED') {
+      data.status = 'PUBLISHED';
+      data.publishedAt = existing.publishedAt ?? new Date();
+    } else if (input.status === 'DRAFT') {
+      data.status = 'DRAFT';
+    }
+    const post = await this.prisma.post.update({
+      where: { id },
+      data,
+      include: { author: true },
+    });
+    const viewerLiked = !!(await this.prisma.like.findUnique({
+      where: { userId_postId: { userId, postId: id } },
+    }));
+    return toDetail(post, viewerLiked);
+  }
+
+  async remove(id: string, userId: string): Promise<void> {
+    const existing = await this.prisma.post.findUnique({ where: { id } });
+    if (!existing)
+      throw new AppError(ErrorCode.POST_NOT_FOUND, 404, 'Post not found');
+    if (existing.authorId !== userId) {
+      throw new AppError(ErrorCode.FORBIDDEN, 403, 'Not your post');
+    }
+    await this.prisma.post.delete({ where: { id } });
+  }
+
+  async ensureExists(id: string): Promise<void> {
+    const post = await this.prisma.post.findUnique({ where: { id } });
+    if (!post)
+      throw new AppError(ErrorCode.POST_NOT_FOUND, 404, 'Post not found');
   }
 }
