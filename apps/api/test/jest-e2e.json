@@ -3,6 +3,7 @@
   "rootDir": ".",
   "testEnvironment": "node",
   "testRegex": ".e2e-spec.ts$",
+  "maxWorkers": 1,
   "setupFiles": ["<rootDir>/env-setup.ts"],
   "transform": {
     "^.+\\.(t|j)s$": ["ts-jest", { "tsconfig": { "module": "CommonJS", "moduleResolution": "node", "esModuleInterop": true, "allowSyntheticDefaultImports": true, "experimentalDecorators": true, "emitDecoratorMetadata": true, "strict": true }, "diagnostics": false }]
