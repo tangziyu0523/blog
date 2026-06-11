@@ -4,6 +4,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { AppError } from '../common/app-error';
 import { ErrorCode } from '@blog/shared';
 import { slugifyTitle, shortSuffix } from './slug';
+import { buildPostTokens } from '../search/post-tokens';
 import { toSummary, toDetail, type PostWithAuthor } from './post.mapper';
 import type { PostDetail, PostSummary, Paginated } from '@blog/shared';
 
@@ -37,6 +38,11 @@ export class PostsService {
 
   async create(authorId: string, input: CreateInput): Promise<PostDetail> {
     const slug = await this.uniqueSlug(input.title);
+    const tokens = buildPostTokens({
+      title: input.title,
+      contentMd: input.contentMd,
+      tags: input.tags ?? [],
+    });
     const post = await this.prisma.post.create({
       data: {
         slug,
@@ -45,6 +51,7 @@ export class PostsService {
         tags: input.tags ?? [],
         summary: input.summary ?? null,
         authorId,
+        ...tokens,
       },
       include: { author: true },
     });
@@ -120,6 +127,20 @@ export class PostsService {
     if (input.contentMd !== undefined) data.contentMd = input.contentMd;
     if (input.tags !== undefined) data.tags = input.tags;
     if (input.summary !== undefined) data.summary = input.summary;
+    if (
+      input.title !== undefined ||
+      input.contentMd !== undefined ||
+      input.tags !== undefined
+    ) {
+      const tokens = buildPostTokens({
+        title: input.title ?? existing.title,
+        contentMd: input.contentMd ?? existing.contentMd,
+        tags: input.tags ?? existing.tags,
+      });
+      data.titleTokens = tokens.titleTokens;
+      data.bodyTokens = tokens.bodyTokens;
+      data.tagsTokens = tokens.tagsTokens;
+    }
     // publishedAt records the FIRST publish time and is immutable thereafter:
     // first publish stamps now; re-publishing after a DRAFT reversion keeps the
     // original date (existing.publishedAt). Reverting to DRAFT does NOT clear it —
