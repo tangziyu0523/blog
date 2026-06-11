@@ -32,6 +32,9 @@ model Post {
   summary     String?
   contentMd   String
   tags        String[]
+  titleTokens String     @default("")
+  bodyTokens  String     @default("")
+  tagsTokens  String     @default("")
   status      PostStatus @default(DRAFT)
   likeCount   Int        @default(0)
   authorId    String

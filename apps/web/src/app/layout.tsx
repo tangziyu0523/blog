@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { Playfair_Display, Lora, Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/lib/auth-context";
@@ -22,7 +23,20 @@ export default function RootLayout({
       className={`${playfair.variable} ${lora.variable} ${inter.variable} ${mono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
-        <AuthProvider>{children}</AuthProvider>
+        <AuthProvider>
+          <header
+            className="flex justify-between px-6 py-4 border-b"
+            style={{ borderColor: "var(--border)" }}
+          >
+            <Link href="/" style={{ fontFamily: "var(--font-display)" }}>
+              Naturalist Journal
+            </Link>
+            <Link href="/search" style={{ color: "var(--text-2)" }}>
+              搜索
+            </Link>
+          </header>
+          {children}
+        </AuthProvider>
       </body>
     </html>
   );

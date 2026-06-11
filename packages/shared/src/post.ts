@@ -16,6 +16,7 @@ export interface PostSummary {
   likeCount: number;
   publishedAt: string | null; // ISO string over the wire
   author: PostAuthor;
+  highlight?: string; // server-built snippet (only <b> tags); present on search results
 }
 
 export interface PostDetail extends PostSummary {
