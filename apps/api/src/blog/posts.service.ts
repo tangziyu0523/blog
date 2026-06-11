@@ -2,7 +2,8 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { slugifyTitle, shortSuffix } from './slug';
 import { toDetail } from './post.mapper';
-import type { PostDetail } from '@blog/shared';
+import { AppError } from '../common/app-error';
+import { ErrorCode, type PostDetail } from '@blog/shared';
 
 interface CreateInput {
   title: string;
@@ -16,9 +17,18 @@ export class PostsService {
   constructor(private readonly prisma: PrismaService) {}
 
   private async uniqueSlug(title: string): Promise<string> {
-    let slug = slugifyTitle(title);
+    const base = slugifyTitle(title);
+    let slug = base;
+    let attempts = 0;
     while (await this.prisma.post.findUnique({ where: { slug } })) {
-      slug = `${slugifyTitle(title)}-${shortSuffix()}`;
+      if (++attempts > 5) {
+        throw new AppError(
+          ErrorCode.SLUG_TAKEN,
+          500,
+          'Could not generate a unique slug',
+        );
+      }
+      slug = `${base}-${shortSuffix()}`;
     }
     return slug;
   }
