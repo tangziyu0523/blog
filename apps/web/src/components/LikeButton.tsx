@@ -16,18 +16,23 @@ export function LikeButton({
   async function toggle() {
     if (busy) return;
     setBusy(true);
+    const prevLiked = liked;
+    const prevCount = count;
     // optimistic flip
-    setLiked((v) => !v);
-    setCount((c) => c + (liked ? -1 : 1));
+    setLiked(!prevLiked);
+    setCount(prevCount + (prevLiked ? -1 : 1));
     try {
       const r = await api<LikeResult>(`/posts/${postId}/like`, { method: "POST" });
       setLiked(r.liked);
       setCount(r.likeCount);
     } catch (e) {
-      // revert
-      setLiked(initialLiked);
-      setCount(initialCount);
-      if (e instanceof ApiClientError && (e.code === "TOKEN_INVALID" || e.code === "TOKEN_EXPIRED")) {
+      // revert to the pre-click state (not the stale SSR props)
+      setLiked(prevLiked);
+      setCount(prevCount);
+      if (
+        e instanceof ApiClientError &&
+        (e.code === "TOKEN_INVALID" || e.code === "TOKEN_EXPIRED")
+      ) {
         router.push("/login");
         return;
       }
