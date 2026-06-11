@@ -48,6 +48,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
   }, []);
 
+  // Inlines fetchMe rather than calling refresh(): putting refresh() in the dep
+  // array risks a re-run loop, omitting it is a lint error, and the
+  // startTransition wrapper is required by react-hooks/set-state-in-effect.
   useEffect(() => {
     fetchMe()
       .then((next) => {
