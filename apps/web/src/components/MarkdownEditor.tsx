@@ -38,29 +38,47 @@ export function MarkdownEditor({ postId, initialTitle = "", initialMarkdown = ""
 
   async function save(status: "DRAFT" | "PUBLISHED") {
     if (busy) return;
+    const md = getMarkdown();
+    if (!title.trim()) {
+      setError("请填写标题");
+      return;
+    }
+    if (!md.trim()) {
+      setError("请填写正文");
+      return;
+    }
     setBusy(true);
     setError(null);
     try {
-      const body = { title, contentMd: getMarkdown() };
-      let post: PostDetail;
+      const body = { title, contentMd: md };
       if (postId) {
-        post = await api<PostDetail>(`/posts/${postId}`, {
+        const post = await api<PostDetail>(`/posts/${postId}`, {
           method: "PATCH",
           body: JSON.stringify({ ...body, status }),
         });
-      } else {
-        post = await api<PostDetail>("/posts", {
-          method: "POST",
-          body: JSON.stringify(body),
-        });
-        if (status === "PUBLISHED") {
-          post = await api<PostDetail>(`/posts/${post.id}`, {
-            method: "PATCH",
-            body: JSON.stringify({ status }),
-          });
-        }
+        router.push(status === "PUBLISHED" ? `/posts/${post.slug}` : `/editor/${post.slug}`);
+        return;
       }
-      router.push(status === "PUBLISHED" ? `/posts/${post.slug}` : `/editor/${post.slug}`);
+      const created = await api<PostDetail>("/posts", {
+        method: "POST",
+        body: JSON.stringify(body),
+      });
+      if (status === "DRAFT") {
+        router.push(`/editor/${created.slug}`);
+        return;
+      }
+      try {
+        const published = await api<PostDetail>(`/posts/${created.id}`, {
+          method: "PATCH",
+          body: JSON.stringify({ status }),
+        });
+        router.push(`/posts/${published.slug}`);
+      } catch {
+        // The draft was created but publishing failed — land on its editor so
+        // it's recoverable (a retry there is a single atomic PATCH), not an
+        // invisible orphan.
+        router.push(`/editor/${created.slug}`);
+      }
     } catch (e) {
       setError(e instanceof ApiClientError ? e.message : "保存失败");
     } finally {
