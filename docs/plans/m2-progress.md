@@ -5,7 +5,7 @@
 > 设计：[../superpowers/specs/2026-06-11-m2-blog-core-design.md](../superpowers/specs/2026-06-11-m2-blog-core-design.md)
 > Next16 侦察：[../superpowers/notes/next16-recon.md](../superpowers/notes/next16-recon.md)
 >
-> 状态：**全部 15 个 Task 完成（15/15）。最终门全绿：`pnpm verify` 8/8、e2e 20/20（7 套件）。剩：收尾分支（合并/PR，待用户定夺）。**
+> 状态：**全部 15 个 Task 完成（15/15）。最终门全绿：`pnpm verify` 8/8、e2e 20/20（7 套件）。收尾已完成：`feat/m2-design-system` 已合并到 `main`（`e8d2cac`，2026-06-11）。M2 全部收尾。**
 > 执行方式：subagent-driven-development —— 每个 Task 派 implementer 子代理，再过 spec-review + code-quality-review 两道审查。
 >
 > ⚠️ **唯一未自动验证项**：Tiptap markdown **往返保真**（编辑器里写 → 存 → 重新打开是否一致）。e2e 是直接打 API 建文章，没走 Tiptap UI；spike 已确认 `tiptap-markdown@0.9` peer 是 `@tiptap/core ^3.0.1`（即 v3 版），build/typecheck 通过。建议 `pnpm dev` 后手动写一篇验证一次。
@@ -38,8 +38,9 @@
 - 审查修正：编辑页 fetch 失败不再白屏（404→回首页，其他→提示）；新建+发布若 PATCH 失败，落到草稿编辑器可恢复（不留隐形孤儿）；提交前校验标题/正文非空。— `8911389`
 - 最终门：`pnpm verify` 8/8；`DATABASE_URL=…/blog_test … test:e2e` → 20/20。
 
-### 收尾（待用户定夺）
-走 `superpowers:finishing-a-development-branch`：把 `feat/m2-design-system` 合并到 `main` 或开 PR。合并/PR 是对外/不可逆动作，等用户确认再做。
+### 收尾（已完成）
+已走 `superpowers:finishing-a-development-branch`：`feat/m2-design-system` 已合并到 `main`（merge commit `e8d2cac`，2026-06-11）。M2 收尾完成。
+> ⚠️ 仍建议手动验证一次 Tiptap markdown 往返保真（见顶部说明）——e2e 未覆盖编辑器 UI。
 
 ---
 
