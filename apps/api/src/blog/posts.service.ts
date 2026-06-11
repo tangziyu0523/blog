@@ -93,9 +93,7 @@ export class PostsService {
       throw new AppError(ErrorCode.POST_NOT_FOUND, 404, 'Post not found');
     }
     const viewerLiked = viewerId
-      ? !!(await this.prisma.like.findUnique({
-          where: { userId_postId: { userId: viewerId, postId: post.id } },
-        }))
+      ? await this.viewerLiked(viewerId, post.id)
       : false;
     return toDetail(post, viewerLiked);
   }
@@ -122,6 +120,10 @@ export class PostsService {
     if (input.contentMd !== undefined) data.contentMd = input.contentMd;
     if (input.tags !== undefined) data.tags = input.tags;
     if (input.summary !== undefined) data.summary = input.summary;
+    // publishedAt records the FIRST publish time and is immutable thereafter:
+    // first publish stamps now; re-publishing after a DRAFT reversion keeps the
+    // original date (existing.publishedAt). Reverting to DRAFT does NOT clear it —
+    // the public list filters on status, not publishedAt, so visibility is unaffected.
     if (input.status === 'PUBLISHED' && existing.status !== 'PUBLISHED') {
       data.status = 'PUBLISHED';
       data.publishedAt = existing.publishedAt ?? new Date();
@@ -133,9 +135,7 @@ export class PostsService {
       data,
       include: { author: true },
     });
-    const viewerLiked = !!(await this.prisma.like.findUnique({
-      where: { userId_postId: { userId, postId: id } },
-    }));
+    const viewerLiked = await this.viewerLiked(userId, id);
     return toDetail(post, viewerLiked);
   }
 
@@ -147,6 +147,13 @@ export class PostsService {
       throw new AppError(ErrorCode.FORBIDDEN, 403, 'Not your post');
     }
     await this.prisma.post.delete({ where: { id } });
+  }
+
+  private async viewerLiked(userId: string, postId: string): Promise<boolean> {
+    const row = await this.prisma.like.findUnique({
+      where: { userId_postId: { userId, postId } },
+    });
+    return !!row;
   }
 
   async ensureExists(id: string): Promise<void> {

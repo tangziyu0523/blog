@@ -165,4 +165,12 @@ describe('PostsService read/update/delete', () => {
       code: 'POST_NOT_FOUND',
     });
   });
+
+  it('getBySlug lets the author view their own draft', async () => {
+    prismaMock.post.findUnique.mockResolvedValue(row({ status: 'DRAFT' }));
+    prismaMock.like.findUnique.mockResolvedValue(null);
+    const d = await service.getBySlug('s', 'u1');
+    expect(d.status).toBe('DRAFT');
+    expect(d.viewerLiked).toBe(false);
+  });
 });
