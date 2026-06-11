@@ -14,8 +14,16 @@ describe('Blog core (e2e)', () => {
     await resetDb(app);
   });
 
-  const author = { email: 'author@test.com', password: 'password123', nickname: 'Author' };
-  const reader = { email: 'reader@test.com', password: 'password123', nickname: 'Reader' };
+  const author = {
+    email: 'author@test.com',
+    password: 'password123',
+    nickname: 'Author',
+  };
+  const reader = {
+    email: 'reader@test.com',
+    password: 'password123',
+    nickname: 'Reader',
+  };
 
   async function newAgent(creds: typeof author) {
     const agent = request.agent(app.getHttpServer());
@@ -67,7 +75,10 @@ describe('Blog core (e2e)', () => {
 
   it('non-owner cannot PATCH or DELETE (403)', async () => {
     const a = await newAgent(author);
-    const created = await a.post('/posts').send({ title: 'Mine', contentMd: 'x' }).expect(201);
+    const created = await a
+      .post('/posts')
+      .send({ title: 'Mine', contentMd: 'x' })
+      .expect(201);
     const id = created.body.id;
 
     const intruder = await newAgent(reader);
@@ -77,8 +88,14 @@ describe('Blog core (e2e)', () => {
 
   it('anonymous like is rejected (401)', async () => {
     const a = await newAgent(author);
-    const created = await a.post('/posts').send({ title: 'P', contentMd: 'x' }).expect(201);
-    await a.patch(`/posts/${created.body.id}`).send({ status: 'PUBLISHED' }).expect(200);
+    const created = await a
+      .post('/posts')
+      .send({ title: 'P', contentMd: 'x' })
+      .expect(201);
+    await a
+      .patch(`/posts/${created.body.id}`)
+      .send({ status: 'PUBLISHED' })
+      .expect(200);
 
     const anon = request.agent(app.getHttpServer());
     await anon.post(`/posts/${created.body.id}/like`).expect(401);
