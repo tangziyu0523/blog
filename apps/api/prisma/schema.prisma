@@ -19,6 +19,43 @@ model User {
   githubLogin     String?
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
+  posts           Post[]
+  likes           Like[]
 
   @@index([githubId])
+}
+
+model Post {
+  id          String     @id @default(cuid())
+  slug        String     @unique
+  title       String
+  summary     String?
+  contentMd   String
+  tags        String[]
+  status      PostStatus @default(DRAFT)
+  likeCount   Int        @default(0)
+  authorId    String
+  author      User       @relation(fields: [authorId], references: [id])
+  publishedAt DateTime?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  likes       Like[]
+
+  @@index([status, publishedAt])
+  @@index([authorId])
+}
+
+enum PostStatus {
+  DRAFT
+  PUBLISHED
+}
+
+model Like {
+  userId    String
+  postId    String
+  createdAt DateTime @default(now())
+  user      User @relation(fields: [userId], references: [id])
+  post      Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@id([userId, postId])
 }

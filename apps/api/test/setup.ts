@@ -37,6 +37,8 @@ export async function createTestApp(): Promise<INestApplication> {
 
 export async function resetDb(app: INestApplication): Promise<void> {
   const prisma = app.get(PrismaService);
+  await prisma.like.deleteMany();
+  await prisma.post.deleteMany();
   await prisma.user.deleteMany();
   const redis = app.get(RedisService);
   await redis.flushdb();
