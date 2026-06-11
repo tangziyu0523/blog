@@ -159,13 +159,6 @@ describe('PostsService read/update/delete', () => {
     });
   });
 
-  it('ensureExists throws POST_NOT_FOUND when missing', async () => {
-    prismaMock.post.findUnique.mockResolvedValue(null);
-    await expect(service.ensureExists('nope')).rejects.toMatchObject({
-      code: 'POST_NOT_FOUND',
-    });
-  });
-
   it('getBySlug lets the author view their own draft', async () => {
     prismaMock.post.findUnique.mockResolvedValue(row({ status: 'DRAFT' }));
     prismaMock.like.findUnique.mockResolvedValue(null);

@@ -37,6 +37,8 @@ export class PostsController {
   @Get()
   @UseGuards(OptionalJwtGuard)
   list(@CurrentUser() user: Viewer, @Query() q: ListPostsQuery) {
+    // `?mine` without a valid session degrades silently to the public list:
+    // PostsService.list ignores `mine` when userId is undefined.
     const mine = q.mine === '1' || q.mine === 'true';
     return this.posts.list({
       page: q.page ?? 1,
@@ -75,8 +77,7 @@ export class PostsController {
   @Post(':id/like')
   @HttpCode(200)
   @UseGuards(JwtAuthGuard)
-  async like(@CurrentUser() user: { userId: string }, @Param('id') id: string) {
-    await this.posts.ensureExists(id);
+  like(@CurrentUser() user: { userId: string }, @Param('id') id: string) {
     return this.likes.toggle(user.userId, id);
   }
 }

@@ -155,10 +155,4 @@ export class PostsService {
     });
     return !!row;
   }
-
-  async ensureExists(id: string): Promise<void> {
-    const post = await this.prisma.post.findUnique({ where: { id } });
-    if (!post)
-      throw new AppError(ErrorCode.POST_NOT_FOUND, 404, 'Post not found');
-  }
 }

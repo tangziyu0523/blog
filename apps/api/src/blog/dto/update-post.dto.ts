@@ -24,6 +24,7 @@ export class UpdatePostDto {
   @IsArray()
   @ArrayMaxSize(5)
   @IsString({ each: true })
+  @MinLength(1, { each: true })
   @MaxLength(30, { each: true })
   tags?: string[];
 

@@ -4,7 +4,11 @@ import { PrismaService } from '../prisma/prisma.service';
 
 const tx = {
   like: { createMany: jest.fn(), deleteMany: jest.fn() },
-  post: { update: jest.fn(), findUniqueOrThrow: jest.fn() },
+  post: {
+    update: jest.fn(),
+    findUniqueOrThrow: jest.fn(),
+    findUnique: jest.fn(),
+  },
 };
 const prismaMock = { $transaction: jest.fn() };
 
@@ -23,6 +27,7 @@ describe('LikesService.toggle', () => {
   });
 
   it('likes when not yet liked (insert + increment)', async () => {
+    tx.post.findUnique.mockResolvedValue({ id: 'p1' });
     tx.like.createMany.mockResolvedValue({ count: 1 });
     tx.post.update.mockResolvedValue({ likeCount: 1 });
     const r = await service.toggle('u1', 'p1');
@@ -40,6 +45,7 @@ describe('LikesService.toggle', () => {
   });
 
   it('unlikes when already liked (delete + decrement)', async () => {
+    tx.post.findUnique.mockResolvedValue({ id: 'p1' });
     tx.like.createMany.mockResolvedValue({ count: 0 });
     tx.like.deleteMany.mockResolvedValue({ count: 1 });
     tx.post.update.mockResolvedValue({ likeCount: 0 });
@@ -56,11 +62,20 @@ describe('LikesService.toggle', () => {
   });
 
   it('no-op decrement when a concurrent unlike already removed the row', async () => {
+    tx.post.findUnique.mockResolvedValue({ id: 'p1' });
     tx.like.createMany.mockResolvedValue({ count: 0 });
     tx.like.deleteMany.mockResolvedValue({ count: 0 });
     tx.post.findUniqueOrThrow.mockResolvedValue({ likeCount: 3 });
     const r = await service.toggle('u1', 'p1');
     expect(r).toEqual({ liked: false, likeCount: 3 });
     expect(tx.post.update).not.toHaveBeenCalled();
+  });
+
+  it('throws POST_NOT_FOUND when the post does not exist', async () => {
+    tx.post.findUnique.mockResolvedValue(null);
+    await expect(service.toggle('u1', 'missing')).rejects.toMatchObject({
+      code: 'POST_NOT_FOUND',
+    });
+    expect(tx.like.createMany).not.toHaveBeenCalled();
   });
 });

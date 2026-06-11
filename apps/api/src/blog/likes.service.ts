@@ -1,5 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { AppError } from '../common/app-error';
+import { ErrorCode } from '@blog/shared';
 import type { LikeResult } from '@blog/shared';
 
 @Injectable()
@@ -18,6 +20,13 @@ export class LikesService {
    */
   async toggle(userId: string, postId: string): Promise<LikeResult> {
     return this.prisma.$transaction(async (tx): Promise<LikeResult> => {
+      const exists = await tx.post.findUnique({
+        where: { id: postId },
+        select: { id: true },
+      });
+      if (!exists) {
+        throw new AppError(ErrorCode.POST_NOT_FOUND, 404, 'Post not found');
+      }
       const inserted = await tx.like.createMany({
         data: [{ userId, postId }],
         skipDuplicates: true,
