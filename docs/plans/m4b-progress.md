@@ -6,8 +6,8 @@
 
 ## 状态总览
 
-- **Task 1–3：✅ 完成并验证**（本批：额度有限，只做新建/纯增量，不碰现有 feature 代码）
-- **Task 4–13：⬜ 未开始**
+- **Task 1–4：✅ 完成并验证**（只做新建/纯增量，不碰现有 feature 代码）
+- **Task 5–13：⬜ 未开始**
 
 执行方式：subagent-driven 实现 + controller 端自审（省额度，未派评审 subagent）。Task 2（migration）由 controller 直接做（避免重蹈 M4a 的 search_vector 漂移）。
 
@@ -22,13 +22,13 @@
 | `778e1d4` | feat(shared): 通知类型 + follow/notification 错误码 |
 | `37b2233` | feat(api): Follow & Notification schema + migration + resetDb |
 | `c4ac798` | feat(api): NotificationStreamService（进程内 SSE 扇出） |
+| `e1af937` | feat(api): FollowsService（关注切换/状态/关注者）5/5 单测 |
 
 ## 关键处理记录（恢复前必读）
 - **Task 2 的 search_vector 漂移**：`prisma migrate dev --create-only` 生成的 SQL 含一行 `ALTER TABLE "Post" ALTER COLUMN "search_vector" DROP DEFAULT;`（Prisma 对 M3 GENERATED 列的幻影漂移）。**已手工删除该行**后用 `prisma migrate deploy` 应用（非交互）。⚠️ 后续若再生成迁移（M4c 等），同样要删掉这行。`migrate dev` 应用后会因残留幻影漂移卡在交互提示——用 `migrate deploy` 应用 pending 迁移可绕过。
 - Task 1/2 对现有文件只做**纯增量**编辑（errors.ts/index.ts/schema.prisma/test/setup.ts），未改任何现有 feature 逻辑。
 
 ## 剩余 Task（按计划文件）
-- **Task 4**：FollowsService（关注切换/状态/关注者）+ spec —— 纯新建。
 - **Task 5**：notification.mapper + NotificationsService（emit/list/unread/markRead/markAllRead + notifyForNewComment/notifyNewPost）+ spec —— 纯新建。
 - **Task 6**：FollowsController + NotificationsController（含 `@Sse('stream')`）+ DTO + NotificationsModule + **app.module 接线**（改现有 app.module.ts）。
 - **Task 7**：接入 CommentsService（改 comments.service.ts/module/spec）—— ⚠️ 改现有 feature 代码。
