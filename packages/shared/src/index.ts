@@ -22,3 +22,4 @@ export * from './errors.ts';
 export * from './auth.ts';
 export * from './post.ts';
 export * from './comment.ts';
+export * from './comment-render.ts';

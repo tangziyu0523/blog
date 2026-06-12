@@ -22,5 +22,5 @@ test('CommentView shape compiles', () => {
     replies: [],
   };
   const list: CommentListResult = { items: [v], nextCursor: null, commentCount: 1 };
-  assert.equal(list.items[0].status, 'VISIBLE');
+  assert.equal(list.items[0]!.status, 'VISIBLE');
 });
