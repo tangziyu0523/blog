@@ -1,6 +1,7 @@
 import { Test } from '@nestjs/testing';
 import { ValidationPipe } from '@nestjs/common';
 import type { ValidationError, INestApplication } from '@nestjs/common';
+import { ThrottlerStorage } from '@nestjs/throttler';
 import cookieParser from 'cookie-parser';
 import { AppModule } from '../src/app.module';
 import { AllExceptionsFilter } from '../src/common/all-exceptions.filter';
@@ -9,10 +10,34 @@ import { ErrorCode } from '@blog/shared';
 import { PrismaService } from '../src/prisma/prisma.service';
 import { RedisService } from '../src/redis/redis.service';
 
-export async function createTestApp(): Promise<INestApplication> {
-  const moduleRef = await Test.createTestingModule({
+interface TestAppOptions {
+  // Rate limiting is per-IP and in-memory, so all supertest requests (same
+  // 127.0.0.1) share one window across a whole e2e file. Disable it for
+  // functional suites so accumulated requests don't trip the limiter; leave it
+  // on (default) for suites that specifically assert throttling.
+  disableThrottle?: boolean;
+}
+
+export async function createTestApp(
+  options: TestAppOptions = {},
+): Promise<INestApplication> {
+  const builder = Test.createTestingModule({
     imports: [AppModule],
-  }).compile();
+  });
+  if (options.disableThrottle) {
+    // ThrottlerGuard is registered via APP_GUARD, so overrideGuard() can't reach
+    // it. Instead starve the limiter by overriding its storage to report zero
+    // hits — the guard stays live but never blocks.
+    builder.overrideProvider(ThrottlerStorage).useValue({
+      increment: async () => ({
+        totalHits: 0,
+        timeToExpire: 0,
+        isBlocked: false,
+        timeToBlockExpire: 0,
+      }),
+    });
+  }
+  const moduleRef = await builder.compile();
   const app = moduleRef.createNestApplication();
   app.use(cookieParser());
   app.useGlobalFilters(new AllExceptionsFilter());
@@ -37,6 +62,8 @@ export async function createTestApp(): Promise<INestApplication> {
 
 export async function resetDb(app: INestApplication): Promise<void> {
   const prisma = app.get(PrismaService);
+  await prisma.commentLike.deleteMany();
+  await prisma.comment.deleteMany();
   await prisma.like.deleteMany();
   await prisma.post.deleteMany();
   await prisma.user.deleteMany();

@@ -20,7 +20,9 @@ model User {
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
   posts           Post[]
-  likes           Like[]
+  likes        Like[]
+  comments     Comment[]
+  commentLikes CommentLike[]
 
   @@index([githubId])
 }
@@ -36,16 +38,24 @@ model Post {
   bodyTokens  String     @default("")
   tagsTokens  String     @default("")
   status      PostStatus @default(DRAFT)
-  likeCount   Int        @default(0)
-  authorId    String
+  likeCount    Int        @default(0)
+  commentCount Int        @default(0)
+  authorId     String
   author      User       @relation(fields: [authorId], references: [id])
   publishedAt DateTime?
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
-  likes       Like[]
+  likes     Like[]
+  comments  Comment[]
+
+  // Managed by raw SQL in migrations (generated tsvector column); declared here
+  // so Prisma diffing does not treat it — or its GIN indexes — as drift.
+  searchVector Unsupported("tsvector")? @map("search_vector")
 
   @@index([status, publishedAt])
   @@index([authorId])
+  @@index([searchVector], type: Gin, map: "post_search_vector_idx")
+  @@index([title(ops: raw("gin_trgm_ops"))], type: Gin, map: "post_title_trgm_idx")
 }
 
 enum PostStatus {
@@ -61,4 +71,42 @@ model Like {
   post      Post @relation(fields: [postId], references: [id], onDelete: Cascade)
 
   @@id([userId, postId])
+}
+
+model Comment {
+  id        String        @id @default(cuid())
+  postId    String
+  post      Post          @relation(fields: [postId], references: [id], onDelete: Cascade)
+  authorId  String
+  author    User          @relation(fields: [authorId], references: [id])
+  parentId  String?
+  parent    Comment?      @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies   Comment[]     @relation("CommentReplies")
+  quotedId  String?
+  quoted    Comment?      @relation("CommentQuotes", fields: [quotedId], references: [id], onDelete: SetNull)
+  quotedBy  Comment[]     @relation("CommentQuotes")
+  contentMd String
+  status    CommentStatus @default(VISIBLE)
+  likeCount Int           @default(0)
+  editedAt  DateTime?
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+  likes     CommentLike[]
+
+  @@index([postId, parentId, createdAt])
+}
+
+enum CommentStatus {
+  VISIBLE
+  DELETED
+}
+
+model CommentLike {
+  userId    String
+  commentId String
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
+  comment   Comment  @relation(fields: [commentId], references: [id], onDelete: Cascade)
+
+  @@id([userId, commentId])
 }
