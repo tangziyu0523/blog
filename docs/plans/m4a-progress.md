@@ -7,9 +7,24 @@
 ## 状态总览
 
 - **Phase A（后端 Task 1–9）：✅ 完成并验证**
-- **Phase B（前端 Task 10–12）：⬜ 未开始**
+- **Phase B（前端 Task 10–12）：✅ 完成并验证**
+- **M4a 整体：✅ 完成，待整合（merge/PR）**
 
 执行方式：subagent-driven（每个 task 派实现 agent + 评审）。
+
+### Phase B 收口门禁
+- `pnpm --filter @blog/shared build`：clean
+- `pnpm verify`：**8/8 任务通过**
+- 全量 e2e：**9 suites / 35 tests 通过**
+- `apps/web` 无测试 runner → 以 typecheck + lint + `next build`（成功，post 页含 CommentSection）收口。
+
+### Phase B 提交
+| SHA | 内容 |
+|-----|------|
+| `0b6d415` | feat(web): comments API 客户端 |
+| `91c0193` | feat(web): 评论区 UI（线程/回复/点赞/编辑/删除） |
+
+Task 11 评审修复：like/delete/load-more 加 busy guard（防双击竞态 + 重复追加，对齐 LikeButton）；本地 `editedAt` state 让"已编辑"即时显示；`onCountChange` 串联让 section 总数 + 回复数在会话内创建/删除后保持准确。
 
 ## 验证门禁（Phase A 结束时）
 
