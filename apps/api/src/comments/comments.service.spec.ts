@@ -92,3 +92,92 @@ describe('CommentsService.create', () => {
     ).rejects.toMatchObject({ code: 'POST_NOT_FOUND' });
   });
 });
+
+describe('CommentsService.update & remove', () => {
+  let service: CommentsService;
+  beforeEach(async () => {
+    jest.resetAllMocks();
+    prismaMock.$transaction.mockImplementation((cb: any) => cb(tx));
+    const ref = await Test.createTestingModule({
+      providers: [
+        CommentsService,
+        { provide: PrismaService, useValue: prismaMock },
+      ],
+    }).compile();
+    service = ref.get(CommentsService);
+  });
+
+  it('edit by author sets editedAt', async () => {
+    (prismaMock as any).comment = {
+      findUnique: jest
+        .fn()
+        .mockResolvedValue({ id: 'c1', authorId: 'u1', status: 'VISIBLE' }),
+      update: jest
+        .fn()
+        .mockResolvedValue(
+          authorRow({ id: 'c1', contentMd: 'new', editedAt: new Date() }),
+        ),
+    };
+    const v = await service.update('u1', 'c1', { contentMd: 'new' });
+    expect(v.editedAt).not.toBeNull();
+  });
+
+  it('edit by non-author is forbidden', async () => {
+    (prismaMock as any).comment = {
+      findUnique: jest
+        .fn()
+        .mockResolvedValue({ id: 'c1', authorId: 'u1', status: 'VISIBLE' }),
+      update: jest.fn(),
+    };
+    await expect(
+      service.update('uX', 'c1', { contentMd: 'x' }),
+    ).rejects.toMatchObject({ code: 'FORBIDDEN' });
+  });
+
+  it('delete by post author tombstones and decrements count', async () => {
+    tx.comment.findUnique.mockResolvedValue({
+      id: 'c1',
+      authorId: 'u-other',
+      status: 'VISIBLE',
+      postId: 'p1',
+      post: { authorId: 'u-post' },
+    });
+    tx.comment.update.mockResolvedValue({});
+    tx.post.update.mockResolvedValue({});
+    await service.remove('u-post', 'c1');
+    expect(tx.comment.update).toHaveBeenCalledWith({
+      where: { id: 'c1' },
+      data: { status: 'DELETED', contentMd: '' },
+    });
+    expect(tx.post.update).toHaveBeenCalledWith({
+      where: { id: 'p1' },
+      data: { commentCount: { decrement: 1 } },
+    });
+  });
+
+  it('delete by unrelated user is forbidden', async () => {
+    tx.comment.findUnique.mockResolvedValue({
+      id: 'c1',
+      authorId: 'u-other',
+      status: 'VISIBLE',
+      postId: 'p1',
+      post: { authorId: 'u-post' },
+    });
+    await expect(service.remove('u-rando', 'c1')).rejects.toMatchObject({
+      code: 'FORBIDDEN',
+    });
+  });
+
+  it('delete already-deleted is idempotent (no double decrement)', async () => {
+    tx.comment.findUnique.mockResolvedValue({
+      id: 'c1',
+      authorId: 'u1',
+      status: 'DELETED',
+      postId: 'p1',
+      post: { authorId: 'u-post' },
+    });
+    await service.remove('u1', 'c1');
+    expect(tx.comment.update).not.toHaveBeenCalled();
+    expect(tx.post.update).not.toHaveBeenCalled();
+  });
+});

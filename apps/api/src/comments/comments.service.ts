@@ -199,4 +199,64 @@ export class CommentsService {
 
     return { items, nextCursor: hasMore ? page[page.length - 1].id : null };
   }
+
+  async update(
+    userId: string,
+    commentId: string,
+    input: { contentMd: string },
+  ): Promise<CommentView> {
+    const existing = await this.prisma.comment.findUnique({
+      where: { id: commentId },
+      select: { id: true, authorId: true, status: true },
+    });
+    if (!existing || existing.status === 'DELETED') {
+      throw new AppError(ErrorCode.COMMENT_NOT_FOUND, 404, 'Comment not found');
+    }
+    if (existing.authorId !== userId) {
+      throw new AppError(ErrorCode.FORBIDDEN, 403, 'Not your comment');
+    }
+    const updated = await this.prisma.comment.update({
+      where: { id: commentId },
+      data: { contentMd: input.contentMd, editedAt: new Date() },
+      include: COMMENT_INCLUDE,
+    });
+    return toCommentView(updated, false, 0, []);
+  }
+
+  async remove(userId: string, commentId: string): Promise<void> {
+    await this.prisma.$transaction(async (tx) => {
+      const c = await tx.comment.findUnique({
+        where: { id: commentId },
+        select: {
+          id: true,
+          authorId: true,
+          status: true,
+          postId: true,
+          post: { select: { authorId: true } },
+        },
+      });
+      if (!c)
+        throw new AppError(
+          ErrorCode.COMMENT_NOT_FOUND,
+          404,
+          'Comment not found',
+        );
+      if (c.status === 'DELETED') return; // idempotent: already a tombstone, no double decrement
+      if (c.authorId !== userId && c.post.authorId !== userId) {
+        throw new AppError(
+          ErrorCode.FORBIDDEN,
+          403,
+          'Not allowed to delete this comment',
+        );
+      }
+      await tx.comment.update({
+        where: { id: commentId },
+        data: { status: 'DELETED', contentMd: '' },
+      });
+      await tx.post.update({
+        where: { id: c.postId },
+        data: { commentCount: { decrement: 1 } },
+      });
+    });
+  }
 }
