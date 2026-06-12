@@ -1,12 +1,14 @@
 import { Test } from '@nestjs/testing';
 import { CommentsService } from './comments.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { NotificationsService } from '../notifications/notifications.service';
 
 const tx = {
   post: { findUnique: jest.fn(), update: jest.fn() },
   comment: { findUnique: jest.fn(), create: jest.fn(), update: jest.fn() },
 };
 const prismaMock = { $transaction: jest.fn() };
+const notificationsMock = { notifyForNewComment: jest.fn() };
 
 function authorRow(over: Record<string, unknown> = {}) {
   return {
@@ -35,6 +37,7 @@ describe('CommentsService.create', () => {
       providers: [
         CommentsService,
         { provide: PrismaService, useValue: prismaMock },
+        { provide: NotificationsService, useValue: notificationsMock },
       ],
     }).compile();
     service = ref.get(CommentsService);
@@ -91,6 +94,21 @@ describe('CommentsService.create', () => {
       service.create('u1', 'pX', { contentMd: 'hi' }),
     ).rejects.toMatchObject({ code: 'POST_NOT_FOUND' });
   });
+
+  it('emits a new-comment notification after creating', async () => {
+    tx.post.findUnique.mockResolvedValue({ id: 'p1' });
+    tx.comment.create.mockResolvedValue(authorRow());
+    tx.post.update.mockResolvedValue({});
+    await service.create('u1', 'p1', { contentMd: 'hi' });
+    expect(notificationsMock.notifyForNewComment).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: 'c-new',
+        postId: 'p1',
+        authorId: 'u1',
+        parentId: null,
+      }),
+    );
+  });
 });
 
 describe('CommentsService.update & remove', () => {
@@ -102,6 +120,7 @@ describe('CommentsService.update & remove', () => {
       providers: [
         CommentsService,
         { provide: PrismaService, useValue: prismaMock },
+        { provide: NotificationsService, useValue: notificationsMock },
       ],
     }).compile();
     service = ref.get(CommentsService);

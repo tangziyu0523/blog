@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { AppError } from '../common/app-error';
 import { ErrorCode } from '@blog/shared';
 import type {
@@ -7,7 +8,11 @@ import type {
   CommentListResult,
   CommentRepliesResult,
 } from '@blog/shared';
-import { COMMENT_INCLUDE, toCommentView } from './comment.mapper';
+import {
+  COMMENT_INCLUDE,
+  toCommentView,
+  type CommentRow,
+} from './comment.mapper';
 
 interface CreateInput {
   contentMd: string;
@@ -17,84 +22,98 @@ interface CreateInput {
 
 @Injectable()
 export class CommentsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly notifications: NotificationsService,
+  ) {}
 
   async create(
     userId: string,
     postId: string,
     input: CreateInput,
   ): Promise<CommentView> {
-    return this.prisma.$transaction(async (tx): Promise<CommentView> => {
-      const post = await tx.post.findUnique({
-        where: { id: postId },
-        select: { id: true },
-      });
-      if (!post)
-        throw new AppError(ErrorCode.POST_NOT_FOUND, 404, 'Post not found');
-
-      let parentId: string | null = null;
-      let quotedId: string | null = input.quotedId ?? null;
-
-      if (input.parentId) {
-        const parent = await tx.comment.findUnique({
-          where: { id: input.parentId },
-          select: { id: true, postId: true, parentId: true, status: true },
+    const { view, created } = await this.prisma.$transaction(
+      async (tx): Promise<{ view: CommentView; created: CommentRow }> => {
+        const post = await tx.post.findUnique({
+          where: { id: postId },
+          select: { id: true },
         });
-        if (
-          !parent ||
-          parent.postId !== postId ||
-          parent.status === 'DELETED'
-        ) {
-          throw new AppError(
-            ErrorCode.COMMENT_NOT_FOUND,
-            404,
-            'Parent comment not found',
-          );
-        }
-        if (parent.parentId === null) {
-          parentId = parent.id;
-        } else {
-          parentId = parent.parentId;
-          quotedId = quotedId ?? parent.id;
-        }
-      }
+        if (!post)
+          throw new AppError(ErrorCode.POST_NOT_FOUND, 404, 'Post not found');
 
-      if (quotedId) {
-        const quoted = await tx.comment.findUnique({
-          where: { id: quotedId },
-          select: { id: true, postId: true, status: true },
+        let parentId: string | null = null;
+        let quotedId: string | null = input.quotedId ?? null;
+
+        if (input.parentId) {
+          const parent = await tx.comment.findUnique({
+            where: { id: input.parentId },
+            select: { id: true, postId: true, parentId: true, status: true },
+          });
+          if (
+            !parent ||
+            parent.postId !== postId ||
+            parent.status === 'DELETED'
+          ) {
+            throw new AppError(
+              ErrorCode.COMMENT_NOT_FOUND,
+              404,
+              'Parent comment not found',
+            );
+          }
+          if (parent.parentId === null) {
+            parentId = parent.id;
+          } else {
+            parentId = parent.parentId;
+            quotedId = quotedId ?? parent.id;
+          }
+        }
+
+        if (quotedId) {
+          const quoted = await tx.comment.findUnique({
+            where: { id: quotedId },
+            select: { id: true, postId: true, status: true },
+          });
+          if (
+            !quoted ||
+            quoted.postId !== postId ||
+            quoted.status === 'DELETED'
+          ) {
+            throw new AppError(
+              ErrorCode.COMMENT_NOT_FOUND,
+              404,
+              'Quoted comment not found',
+            );
+          }
+        }
+
+        const created = await tx.comment.create({
+          data: {
+            postId,
+            authorId: userId,
+            parentId,
+            quotedId,
+            contentMd: input.contentMd,
+          },
+          include: COMMENT_INCLUDE,
         });
-        if (
-          !quoted ||
-          quoted.postId !== postId ||
-          quoted.status === 'DELETED'
-        ) {
-          throw new AppError(
-            ErrorCode.COMMENT_NOT_FOUND,
-            404,
-            'Quoted comment not found',
-          );
-        }
-      }
 
-      const created = await tx.comment.create({
-        data: {
-          postId,
-          authorId: userId,
-          parentId,
-          quotedId,
-          contentMd: input.contentMd,
-        },
-        include: COMMENT_INCLUDE,
-      });
+        await tx.post.update({
+          where: { id: postId },
+          data: { commentCount: { increment: 1 } },
+        });
 
-      await tx.post.update({
-        where: { id: postId },
-        data: { commentCount: { increment: 1 } },
-      });
+        return { view: toCommentView(created, false, 0, []), created };
+      },
+    );
 
-      return toCommentView(created, false, 0, []);
+    await this.notifications.notifyForNewComment({
+      id: created.id,
+      postId: created.postId,
+      authorId: created.authorId,
+      parentId: created.parentId,
+      quotedId: created.quotedId,
     });
+    return view;
   }
 
   private async likedSet(
