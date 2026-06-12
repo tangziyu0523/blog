@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import type { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { AppError } from '../common/app-error';
 import { ErrorCode } from '@blog/shared';
 import { slugifyTitle, shortSuffix } from './slug';
@@ -17,7 +18,10 @@ interface CreateInput {
 
 @Injectable()
 export class PostsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly notifications: NotificationsService,
+  ) {}
 
   private async uniqueSlug(title: string): Promise<string> {
     const base = slugifyTitle(title);
@@ -145,7 +149,9 @@ export class PostsService {
     // first publish stamps now; re-publishing after a DRAFT reversion keeps the
     // original date (existing.publishedAt). Reverting to DRAFT does NOT clear it —
     // the public list filters on status, not publishedAt, so visibility is unaffected.
-    if (input.status === 'PUBLISHED' && existing.status !== 'PUBLISHED') {
+    const isPublishing =
+      input.status === 'PUBLISHED' && existing.status !== 'PUBLISHED';
+    if (isPublishing) {
       data.status = 'PUBLISHED';
       data.publishedAt = existing.publishedAt ?? new Date();
     } else if (input.status === 'DRAFT') {
@@ -156,6 +162,12 @@ export class PostsService {
       data,
       include: { author: true },
     });
+    if (isPublishing) {
+      await this.notifications.notifyNewPost({
+        id: post.id,
+        authorId: post.authorId,
+      });
+    }
     const viewerLiked = await this.viewerLiked(userId, id);
     return toDetail(post, viewerLiked);
   }
