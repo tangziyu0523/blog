@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { fetchPostBySlug } from "@/lib/posts";
 import { MarkdownRenderer } from "@/components/MarkdownRenderer";
 import { LikeButton } from "@/components/LikeButton";
+import { CommentSection } from "@/components/CommentSection";
 
 export default async function PostPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
@@ -20,6 +21,7 @@ export default async function PostPage({ params }: { params: Promise<{ slug: str
         ✦ Naturalis Historia ✦
       </p>
       <LikeButton postId={post.id} initialLiked={post.viewerLiked} initialCount={post.likeCount} />
+      <CommentSection postId={post.id} postAuthorId={post.author.id} />
     </main>
   );
 }
