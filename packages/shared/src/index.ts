@@ -23,3 +23,4 @@ export * from './auth.ts';
 export * from './post.ts';
 export * from './comment.ts';
 export * from './comment-render.ts';
+export * from './notification.ts';
