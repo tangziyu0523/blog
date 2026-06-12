@@ -2,7 +2,11 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { AppError } from '../common/app-error';
 import { ErrorCode } from '@blog/shared';
-import type { CommentView } from '@blog/shared';
+import type {
+  CommentView,
+  CommentListResult,
+  CommentRepliesResult,
+} from '@blog/shared';
 import { COMMENT_INCLUDE, toCommentView } from './comment.mapper';
 
 interface CreateInput {
@@ -91,5 +95,108 @@ export class CommentsService {
 
       return toCommentView(created, false, 0, []);
     });
+  }
+
+  private async likedSet(
+    viewerId: string | undefined,
+    ids: string[],
+  ): Promise<Set<string>> {
+    if (!viewerId || ids.length === 0) return new Set();
+    const rows = await this.prisma.commentLike.findMany({
+      where: { userId: viewerId, commentId: { in: ids } },
+      select: { commentId: true },
+    });
+    return new Set(rows.map((r) => r.commentId));
+  }
+
+  async list(
+    postId: string,
+    viewerId: string | undefined,
+    cursor?: string,
+    take = 20,
+  ): Promise<CommentListResult> {
+    const post = await this.prisma.post.findUnique({
+      where: { id: postId },
+      select: { commentCount: true },
+    });
+    if (!post)
+      throw new AppError(ErrorCode.POST_NOT_FOUND, 404, 'Post not found');
+
+    const rows = await this.prisma.comment.findMany({
+      where: { postId, parentId: null },
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      take: take + 1,
+      ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
+      include: COMMENT_INCLUDE,
+    });
+
+    const hasMore = rows.length > take;
+    const page = hasMore ? rows.slice(0, take) : rows;
+    const topIds = page.map((r) => r.id);
+
+    const replyRows = topIds.length
+      ? await this.prisma.comment.findMany({
+          where: { parentId: { in: topIds } },
+          orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+          include: COMMENT_INCLUDE,
+        })
+      : [];
+
+    const repliesByParent = new Map<string, typeof replyRows>();
+    for (const r of replyRows) {
+      const list = repliesByParent.get(r.parentId as string) ?? [];
+      list.push(r);
+      repliesByParent.set(r.parentId as string, list);
+    }
+
+    const allIds = [...topIds, ...replyRows.map((r) => r.id)];
+    const liked = await this.likedSet(viewerId, allIds);
+
+    const items = page.map((top) => {
+      const all = repliesByParent.get(top.id) ?? [];
+      const first3 = all
+        .slice(0, 3)
+        .map((r) => toCommentView(r, liked.has(r.id), 0, []));
+      return toCommentView(top, liked.has(top.id), all.length, first3);
+    });
+
+    return {
+      items,
+      nextCursor: hasMore ? page[page.length - 1].id : null,
+      commentCount: post.commentCount,
+    };
+  }
+
+  async listReplies(
+    commentId: string,
+    viewerId: string | undefined,
+    cursor?: string,
+    take = 20,
+  ): Promise<CommentRepliesResult> {
+    const top = await this.prisma.comment.findUnique({
+      where: { id: commentId },
+      select: { id: true, parentId: true },
+    });
+    if (!top || top.parentId !== null) {
+      throw new AppError(ErrorCode.COMMENT_NOT_FOUND, 404, 'Comment not found');
+    }
+
+    const rows = await this.prisma.comment.findMany({
+      where: { parentId: commentId },
+      orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+      take: take + 1,
+      ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
+      include: COMMENT_INCLUDE,
+    });
+
+    const hasMore = rows.length > take;
+    const page = hasMore ? rows.slice(0, take) : rows;
+    const liked = await this.likedSet(
+      viewerId,
+      page.map((r) => r.id),
+    );
+    const items = page.map((r) => toCommentView(r, liked.has(r.id), 0, []));
+
+    return { items, nextCursor: hasMore ? page[page.length - 1].id : null };
   }
 }
