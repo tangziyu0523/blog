@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Playfair_Display, Lora, Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/lib/auth-context";
+import { NotificationBell } from "@/components/NotificationBell";
 
 const playfair = Playfair_Display({ subsets: ["latin"], weight: ["600"], variable: "--font-display" });
 const lora = Lora({ subsets: ["latin"], weight: ["400"], variable: "--font-body" });
@@ -31,9 +32,12 @@ export default function RootLayout({
             <Link href="/" style={{ fontFamily: "var(--font-display)" }}>
               Naturalist Journal
             </Link>
-            <Link href="/search" style={{ color: "var(--text-2)" }}>
-              搜索
-            </Link>
+            <div className="flex items-center gap-4">
+              <Link href="/search" style={{ color: "var(--text-2)" }}>
+                搜索
+              </Link>
+              <NotificationBell />
+            </div>
           </header>
           {children}
         </AuthProvider>
