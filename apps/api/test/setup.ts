@@ -37,6 +37,8 @@ export async function createTestApp(): Promise<INestApplication> {
 
 export async function resetDb(app: INestApplication): Promise<void> {
   const prisma = app.get(PrismaService);
+  await prisma.commentLike.deleteMany();
+  await prisma.comment.deleteMany();
   await prisma.like.deleteMany();
   await prisma.post.deleteMany();
   await prisma.user.deleteMany();
