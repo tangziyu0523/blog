@@ -6,8 +6,25 @@
 
 ## 状态总览
 
-- **Task 1–5：✅ 完成并验证**（只做新建/纯增量，不碰现有 feature 代码）
-- **Task 6–13：⬜ 未开始**（Task 6 起开始改现有文件：app.module、comments、posts、layout、post 页）
+- **Task 1–13：✅ 全部完成并验证**
+- **M4b 整体：✅ 完成，待整合（merge/PR）** —— 分支 `feat/m4b-notifications` 未合并。
+
+### 收口门禁（Task 13）
+- `pnpm --filter @blog/shared build`：clean
+- `pnpm verify`：**8/8 通过**
+- 全量 e2e：**10 suites / 41 tests 通过**（含 notifications 6/6，其中 SSE 流断言通过）
+- web 无测试 runner → typecheck + lint + `next build`（成功）收口。
+
+### Phase B（Task 6–13）提交
+| SHA | 内容 |
+|-----|------|
+| `7463795` | feat(api): follows + notifications controllers + SSE stream + module 接线 |
+| `7e6f3e8` | feat(api): CommentsService.create 发评论通知 |
+| `540a537` | feat(api): 发布转变扇出 NEW_POST |
+| `5b87926` | test(api): notifications e2e（关注/三触发/mark-read/SSE） |
+| `d750d41` | feat(web): notifications + follow API 客户端 |
+| `fcb6288` | feat(web): FollowButton（文章页） |
+| `848224c` | feat(web): NotificationBell（头部 SSE 实时） |
 
 执行方式：subagent-driven 实现 + controller 端自审（省额度，未派评审 subagent）。Task 2（migration）由 controller 直接做（避免重蹈 M4a 的 search_vector 漂移）。
 
