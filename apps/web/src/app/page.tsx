@@ -2,6 +2,8 @@ import { fetchPublishedPosts } from "@/lib/posts";
 import { PostCard } from "@/components/PostCard";
 import { Masthead } from "@/components/Masthead";
 import { HeadlinePost } from "@/components/HeadlinePost";
+import { ScrollReveal } from "@/components/ScrollReveal";
+import { HeroZone } from "@/components/HeroZone";
 import {
   Butterfly2,
   Foliage2,
@@ -20,17 +22,19 @@ export default async function Home() {
 
   return (
     <main className="mx-auto w-full max-w-5xl px-6 pb-24">
-      <Masthead issue={total} />
+      <HeroZone>
+        <Masthead issue={total} />
 
-      {items.length === 0 ? (
-        <p className="mt-16" style={{ color: "var(--text-3)" }}>
-          还没有发布的文章。
-        </p>
-      ) : (
-        <>
-          <HeadlinePost post={headline} />
+        {items.length === 0 && (
+          <p className="mt-16" style={{ color: "var(--text-3)" }}>
+            还没有发布的文章。
+          </p>
+        )}
 
-          {rest.length > 0 && (
+        {items.length > 0 && <HeadlinePost post={headline} />}
+
+        {rest.length > 0 && (
+          <ScrollReveal key={`home-${items.length}`}>
             <section className="mt-16">
               {rest.map((post, i) => {
                 // Rhythm: every other row carries a mid-size plate.
@@ -48,9 +52,9 @@ export default async function Home() {
                 );
               })}
             </section>
-          )}
-        </>
-      )}
+          </ScrollReveal>
+        )}
+      </HeroZone>
     </main>
   );
 }
