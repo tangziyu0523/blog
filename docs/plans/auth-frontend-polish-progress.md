@@ -8,7 +8,14 @@
 
 - **Task 1–7：✅ 完成并验证**（subagent 实现 + controller 端审：diff + gate）
 - **Task 8（MinIO）：✅ 完成** —— bucket 匿名读 + CORS 已验证（见下「MinIO 运行时配置」）。
-- **Task 9（全量校验 + 手动核对）：⬜ 未开始**
+- **Task 9（全量校验 + 手动核对）：✅ 自动门禁全过 + 服务端可观测项已 API 验证；纯视觉项待人工浏览器确认。**
+
+### Task 9 验证结果
+自动门禁：`@blog/web` typecheck clean / lint 0 errors（1 个既有 img warning）/ `next build` 成功（/login /register /settings 成路由）；`pnpm verify` 8/8。
+
+API 已验证（curl）：注册自动登录（201+cookie+/me）、登录错误码 `INVALID_CREDENTIALS`、`PATCH /me` 持久化、GitHub 解绑 200、登出 204；头像链路 Task 8 已端到端跑通（presign→PUT→confirm→匿名 GET 全 200）。
+
+**待人工浏览器确认（纯视觉/交互，无法脚本化）：** 右上角头像框渲染 + 下拉菜单、登出后头部恢复「登录」、`/login?error=...` 中文回显、已登录访问 /login·/register 自动跳首页、设置页选图上传后头像即时刷新、唯一登录方式解绑的中文拦截。代码层面均已实现并通过 build。
 
 ## MinIO 运行时配置（dev，clone 后需手动执行一次）
 
