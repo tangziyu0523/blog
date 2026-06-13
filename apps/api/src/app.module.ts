@@ -13,6 +13,7 @@ import { StorageModule } from './storage/storage.module';
 import { BlogModule } from './blog/blog.module';
 import { SearchModule } from './search/search.module';
 import { CommentsModule } from './comments/comments.module';
+import { NotificationsModule } from './notifications/notifications.module';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { CommentsModule } from './comments/comments.module';
     BlogModule,
     SearchModule,
     CommentsModule,
+    NotificationsModule,
   ],
   controllers: [AppController],
   providers: [AppService, { provide: APP_GUARD, useClass: ThrottlerGuard }],

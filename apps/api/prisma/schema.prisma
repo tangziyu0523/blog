@@ -23,6 +23,10 @@ model User {
   likes        Like[]
   comments     Comment[]
   commentLikes CommentLike[]
+  following          Follow[]       @relation("Following")
+  followers          Follow[]       @relation("Followers")
+  notifications      Notification[] @relation("Recipient")
+  actedNotifications Notification[] @relation("Actor")
 
   @@index([githubId])
 }
@@ -47,6 +51,7 @@ model Post {
   updatedAt   DateTime   @updatedAt
   likes     Like[]
   comments  Comment[]
+  notifications Notification[]
 
   // Managed by raw SQL in migrations (generated tsvector column); declared here
   // so Prisma diffing does not treat it — or its GIN indexes — as drift.
@@ -92,6 +97,7 @@ model Comment {
   createdAt DateTime      @default(now())
   updatedAt DateTime      @updatedAt
   likes     CommentLike[]
+  notifications Notification[]
 
   @@index([postId, parentId, createdAt])
 }
@@ -109,4 +115,39 @@ model CommentLike {
   comment   Comment  @relation(fields: [commentId], references: [id], onDelete: Cascade)
 
   @@id([userId, commentId])
+}
+
+model Follow {
+  followerId String
+  authorId   String
+  createdAt  DateTime @default(now())
+  follower   User     @relation("Following", fields: [followerId], references: [id], onDelete: Cascade)
+  author     User     @relation("Followers", fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@id([followerId, authorId])
+  @@index([authorId])
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  user      User             @relation("Recipient", fields: [userId], references: [id], onDelete: Cascade)
+  type      NotificationType
+  actorId   String?
+  actor     User?            @relation("Actor", fields: [actorId], references: [id], onDelete: SetNull)
+  postId    String?
+  post      Post?            @relation(fields: [postId], references: [id], onDelete: Cascade)
+  commentId String?
+  comment   Comment?         @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  readAt    DateTime?
+  createdAt DateTime         @default(now())
+
+  @@index([userId, createdAt])
+  @@index([userId, readAt])
+}
+
+enum NotificationType {
+  POST_COMMENT
+  COMMENT_REPLY
+  NEW_POST
 }

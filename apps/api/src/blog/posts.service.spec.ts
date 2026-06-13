@@ -1,6 +1,7 @@
 import { Test } from '@nestjs/testing';
 import { PostsService } from './posts.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { NotificationsService } from '../notifications/notifications.service';
 
 const author = { id: 'u1', nickname: 'Al', avatarUrl: null };
 const prismaMock = {
@@ -14,6 +15,7 @@ const prismaMock = {
   },
   like: { findUnique: jest.fn() },
 };
+const notificationsMock = { notifyNewPost: jest.fn() };
 
 describe('PostsService.create', () => {
   let service: PostsService;
@@ -23,6 +25,7 @@ describe('PostsService.create', () => {
       providers: [
         PostsService,
         { provide: PrismaService, useValue: prismaMock },
+        { provide: NotificationsService, useValue: notificationsMock },
       ],
     }).compile();
     service = moduleRef.get(PostsService);
@@ -91,6 +94,7 @@ describe('PostsService read/update/delete', () => {
       providers: [
         PostsService,
         { provide: PrismaService, useValue: prismaMock },
+        { provide: NotificationsService, useValue: notificationsMock },
       ],
     }).compile();
     service = moduleRef.get(PostsService);
@@ -150,6 +154,50 @@ describe('PostsService read/update/delete', () => {
     await service.update('p1', 'u1', { status: 'PUBLISHED' });
     const call = prismaMock.post.update.mock.calls[0][0];
     expect(call.data.publishedAt).toBeInstanceOf(Date);
+  });
+
+  it('fans out NEW_POST when a draft transitions to PUBLISHED', async () => {
+    prismaMock.post.findUnique.mockResolvedValue({
+      id: 'p1',
+      authorId: 'u1',
+      status: 'DRAFT',
+      publishedAt: null,
+      title: 'T',
+      contentMd: '# h',
+      tags: [],
+    });
+    prismaMock.post.update.mockResolvedValue({
+      id: 'p1',
+      slug: 's',
+      title: 'T',
+      summary: null,
+      contentMd: '# h',
+      tags: [],
+      status: 'PUBLISHED',
+      likeCount: 0,
+      commentCount: 0,
+      authorId: 'u1',
+      publishedAt: new Date(),
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      author,
+    });
+    prismaMock.like.findUnique.mockResolvedValue(null);
+    await service.update('p1', 'u1', { status: 'PUBLISHED' });
+    expect(notificationsMock.notifyNewPost).toHaveBeenCalledWith({
+      id: 'p1',
+      authorId: 'u1',
+    });
+  });
+
+  it('does not fan out NEW_POST when updating an already-published post', async () => {
+    prismaMock.post.findUnique.mockResolvedValue(
+      row({ status: 'PUBLISHED', publishedAt: new Date() }),
+    );
+    prismaMock.like.findUnique.mockResolvedValue(null);
+    prismaMock.post.update.mockResolvedValue(row({ title: 'updated' }));
+    await service.update('p1', 'u1', { title: 'updated' });
+    expect(notificationsMock.notifyNewPost).not.toHaveBeenCalled();
   });
 
   it('remove rejects non-owner with FORBIDDEN', async () => {
