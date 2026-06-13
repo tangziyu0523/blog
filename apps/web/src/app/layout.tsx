@@ -4,6 +4,7 @@ import { Playfair_Display, Lora, Inter, JetBrains_Mono } from "next/font/google"
 import "./globals.css";
 import { AuthProvider } from "@/lib/auth-context";
 import { NotificationBell } from "@/components/NotificationBell";
+import { UserMenu } from "@/components/UserMenu";
 
 const playfair = Playfair_Display({ subsets: ["latin"], weight: ["600"], variable: "--font-display" });
 const lora = Lora({ subsets: ["latin"], weight: ["400"], variable: "--font-body" });
@@ -37,6 +38,7 @@ export default function RootLayout({
                 搜索
               </Link>
               <NotificationBell />
+              <UserMenu />
             </div>
           </header>
           {children}
