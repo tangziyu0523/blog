@@ -7,8 +7,18 @@
 ## 状态总览
 
 - **Task 1–7：✅ 完成并验证**（subagent 实现 + controller 端审：diff + gate）
-- **Task 8（MinIO）：⬜ 待单独处理** —— 基础设施，含 environment 分支，由 controller 直接做。
+- **Task 8（MinIO）：✅ 完成** —— bucket 匿名读 + CORS 已验证（见下「MinIO 运行时配置」）。
 - **Task 9（全量校验 + 手动核对）：⬜ 未开始**
+
+## MinIO 运行时配置（dev，clone 后需手动执行一次）
+
+`avatarUrl` 存的是对象 key，bucket 默认私有 → 头像会 403。开发环境执行一次：
+```bash
+docker exec blog-minio mc alias set local http://localhost:9000 minioadmin minioadmin
+docker exec blog-minio mc mb --ignore-existing local/blog   # 若桶不存在
+docker exec blog-minio mc anonymous set download local/blog # 头像匿名可读
+```
+验证（Task 8 已跑通）：匿名 GET 返回 200；CORS 预检 `OPTIONS`（Origin localhost:3000 / PUT）返回 204 带 `Access-Control-Allow-Origin: http://localhost:3000` —— **MinIO 默认 S3 CORS 已放行浏览器直传，无需改 compose**。生产应改用 CDN/公开桶或后端签名 GET。
 
 ## 验证门禁（Task 1–7 结束时）
 - `pnpm --filter @blog/web typecheck`：clean
