@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { ScrollSmoother } from "gsap/ScrollSmoother";
 import { initGL, createProgram } from "./ink/gl-utils";
 import { createPingPong } from "./ink/ping-pong";
 import { createMouseHandler } from "./ink/mouse-handler";
@@ -14,6 +15,10 @@ const RESOLUTION_SCALE = 0.5;
 // Hard cap on FBO dimensions — a full-page canvas can be very tall; clamp so the
 // ping-pong buffers stay small (GPU stretches the soft ink edges imperceptibly).
 const MAX_BUFFER_DIM = 2048;
+// Scroll-driven ink fade: full strength at the top, easing toward this floor as
+// the reader scrolls past roughly FADE_SCROLL_SPAN viewport heights.
+const INK_FADE_FLOOR = 0.5;
+const FADE_SCROLL_SPAN = 2;
 
 const CANVAS_STYLE: CSSProperties = {
   position: "absolute",
@@ -145,6 +150,13 @@ export function InkCanvas({ className }: { className?: string }) {
 
       const draw = (): void => {
         const aspect = canvas.width / canvas.height;
+
+        // Scroll-driven opacity — read the smoothed scroll position from the
+        // ScrollSmoother singleton, not window.scrollY (meaningless once the
+        // content is transform-scrolled). No smoother → treat as top.
+        const scrollTop = ScrollSmoother.get()?.scrollTop() ?? 0;
+        const progress = Math.min(1, scrollTop / (window.innerHeight * FADE_SCROLL_SPAN));
+        canvas.style.opacity = String(1 - (1 - INK_FADE_FLOOR) * progress);
 
         // 1. Drain queued splats along the pointer path into the ink buffer.
         if (mouse.queue.length > 0) {
