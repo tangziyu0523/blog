@@ -9,19 +9,20 @@ if (typeof window !== "undefined") {
   gsap.registerPlugin(ScrollTrigger);
 }
 
-// Total pinned scroll distance (≈260vh) over which the book pages cross-dissolve.
-const TRAVEL = 2.6;
-// Width of each crossfade window in normalised timeline time (0.10 ≈ 26vh).
-const FADE = 0.1;
+// Total pinned scroll distance (≈1310vh) over which the book pages cross-dissolve.
+// The long crossfades (not the dwell) carry the flowing feel; dwell kept for reading.
+const TRAVEL = 13.06;
+// Width of each crossfade window in normalised timeline time (0.358 ≈ 468vh).
+const FADE = 0.3584;
 // Start of each crossfade window, in timeline progress (reading-paced, 3 pages).
-// Index 1 = P1→P2 @0.30, index 2 = P2→P3 @0.62. Tuned for the curated pages.
-const CROSSFADE_AT = [0, 0.3, 0.62];
+// Index 1 = P1→P2 @0.11, index 2 = P2→P3 @0.54. Tuned for the curated pages.
+const CROSSFADE_AT = [0, 0.1062, 0.5425];
 
 /**
  * Pin-and-fade book stage. The curated pages stack as absolute layers in a
  * one-viewport pinned frame; a single scrubbed timeline cross-dissolves them
- * with autoAlpha + a subtle scale (depth, not slide). Reading-paced: each page
- * dwells clearly, then a short ~26vh crossfade bleeds into the next. No snap,
+ * with autoAlpha + a subtle scale (depth, not slide). Slow-paced: each page
+ * dwells at length, then a long ~468vh crossfade bleeds into the next. No snap,
  * no per-layer triggers, no discrete switch.
  *
  * Pin is only a hold — and the ScrollSmoother-compatible one (native sticky
