@@ -5,6 +5,7 @@ import "./globals.css";
 import { AuthProvider } from "@/lib/auth-context";
 import { NotificationBell } from "@/components/NotificationBell";
 import { UserMenu } from "@/components/UserMenu";
+import { SmoothScroll } from "@/components/SmoothScroll";
 
 const playfair = Playfair_Display({ subsets: ["latin"], weight: ["600"], variable: "--font-display" });
 const lora = Lora({ subsets: ["latin"], weight: ["400"], variable: "--font-body" });
@@ -24,24 +25,26 @@ export default function RootLayout({
       lang="zh"
       className={`${playfair.variable} ${lora.variable} ${inter.variable} ${mono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">
+      <body className="min-h-full">
         <AuthProvider>
-          <header
-            className="flex justify-between px-6 py-4 border-b"
-            style={{ borderColor: "var(--border)" }}
-          >
-            <Link href="/" style={{ fontFamily: "var(--font-display)" }}>
-              Naturalist Journal
-            </Link>
-            <div className="flex items-center gap-4">
-              <Link href="/search" style={{ color: "var(--text-2)" }}>
-                搜索
+          <SmoothScroll>
+            <header
+              className="flex justify-between px-6 py-4 border-b"
+              style={{ borderColor: "var(--border)" }}
+            >
+              <Link href="/" style={{ fontFamily: "var(--font-display)" }}>
+                Naturalist Journal
               </Link>
-              <NotificationBell />
-              <UserMenu />
-            </div>
-          </header>
-          {children}
+              <div className="flex items-center gap-4">
+                <Link href="/search" style={{ color: "var(--text-2)" }}>
+                  搜索
+                </Link>
+                <NotificationBell />
+                <UserMenu />
+              </div>
+            </header>
+            {children}
+          </SmoothScroll>
         </AuthProvider>
       </body>
     </html>
