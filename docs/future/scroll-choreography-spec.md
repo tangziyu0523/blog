@@ -48,32 +48,33 @@
   不再有 snap——离散感来自 snap，已彻底移除）。pin 也是 ScrollSmoother 兼容的固定方式
   （原生 `sticky` 在 smoother 的 transform 下会失效）。
 
-### 统一 timeline（3 页，reading-paced ≈ 260vh）
+### 统一 timeline（3 页，slow-paced ≈ 1310vh）
 
-- `TRAVEL = 2.6`（pin 跨度 = 260vh），`end: () => "+=" + innerHeight * TRAVEL`。
+- `TRAVEL = 13.06`（pin 跨度 ≈ 1310vh），`end: () => "+=" + innerHeight * TRAVEL`。
+- `FADE = 0.3584`（单次过渡窗 ≈ 468vh），`CROSSFADE_AT = [0, 0.1062, 0.5425]`（各过渡窗起点，进度）。
 - timeline duration 归一化为 1，每个 tween 的 position 即滚动进度 0–1。
 - 相邻页的「淡出」与「淡入」**落在同一时间窗、同步进行**（即交叉重叠区 / 允许的「重影」）。
 
-每页透明度包络（进度 0→1，█ 实显 / ░ 渐变 / · 隐藏）：
+每页透明度包络（进度 0→1，█ 实显 / ░ 渐变 / · 隐藏）。长过渡窗承载流动感，停留收短：
 
 ```
-progress  0.0      0.30   0.40        0.62   0.72        1.0
-P1  ████████████░░░░·······························   hold → out
-P2  ················░░░░████████████░░░░···········   in → hold → out
-P3  ····························░░░░████████████████   in → hold 至末尾
-                    ↑crossfade        ↑crossfade
+progress 0.00  0.11               0.46 0.54               0.90  1.0
+P1  █████▓▒░░░░░░░░░░░░·······························   hold → out
+P2  ·····░░░░░░░░░░░░▒█████▓░░░░░░░░░░░░░░············   in → hold → out
+P3  ························░░░░░░░░░░░░░░▒█████████   in → hold 至末尾
+        ↑——— 长 crossfade ———↑    ↑——— 长 crossfade ———↑
 ```
 
 | 段 | 进度区间 | 说明 |
 |----|----------|------|
-| P1 solo dwell | 0.00 – 0.30 | 起始即可见，无淡入 |
-| crossfade 1 | 0.30 – 0.40 | P1 淡出 ∥ P2 淡入（≈26vh） |
-| P2 solo dwell | 0.40 – 0.62 | |
-| crossfade 2 | 0.62 – 0.72 | P2 淡出 ∥ P3 淡入（≈26vh） |
-| P3 solo dwell | 0.72 – 1.00 | dwell 到 pin 末尾，再交给索引 |
+| P1 solo dwell | 0.00 – 0.11 | 起始即可见，无淡入（≈139vh） |
+| crossfade 1 | 0.11 – 0.46 | P1 淡出 ∥ P2 淡入（≈468vh） |
+| P2 solo dwell | 0.46 – 0.54 | ≈102vh |
+| crossfade 2 | 0.54 – 0.90 | P2 淡出 ∥ P3 淡入（≈468vh） |
+| P3 solo dwell | 0.90 – 1.00 | dwell 到 pin 末尾，再交给索引（≈129vh） |
 
-- 停留 vs 过渡 ≈ **80% / 20%**：每页清晰停留，过渡是短促平滑的 bleed。
-- 单次过渡窗 = 0.10 × 260vh ≈ **26vh**。
+- 停留 vs 过渡 ≈ **28% / 72%**：过渡（渐融）承载流动感，停留保留可读的阅读节拍。
+- 单次过渡窗 = 0.3584 × 1310vh ≈ **468vh**；三页停留 ≈ 139 / 102 / 129vh。
 
 ### 每次 fade 的动画量（opacity + 轻微 scale）
 
@@ -100,14 +101,14 @@ const tl = gsap.timeline({
     pin: true, scrub: 1.5, invalidateOnRefresh: true,
   },
 });
-// crossfade 1 @0.30，窗宽 0.10
-tl.to(P1, { autoAlpha: 0, scale: 0.99, ease: "power1.inOut", duration: 0.10 }, 0.30)
-  .to(P2, { autoAlpha: 1, scale: 1,    ease: "power1.inOut", duration: 0.10 }, 0.30)
-// crossfade 2 @0.62，窗宽 0.10
-  .to(P2, { autoAlpha: 0, scale: 0.99, ease: "power1.inOut", duration: 0.10 }, 0.62)
-  .to(P3, { autoAlpha: 1, scale: 1,    ease: "power1.inOut", duration: 0.10 }, 0.62)
+// crossfade 1 @0.106，窗宽 FADE=0.3584
+tl.to(P1, { autoAlpha: 0, scale: 0.99, ease: "power1.inOut", duration: 0.3584 }, 0.1062)
+  .to(P2, { autoAlpha: 1, scale: 1,    ease: "power1.inOut", duration: 0.3584 }, 0.1062)
+// crossfade 2 @0.543，窗宽 FADE=0.3584
+  .to(P2, { autoAlpha: 0, scale: 0.99, ease: "power1.inOut", duration: 0.3584 }, 0.5425)
+  .to(P3, { autoAlpha: 1, scale: 1,    ease: "power1.inOut", duration: 0.3584 }, 0.5425)
 // P3 dwell 到末尾，把 timeline duration 锚到 1.0
-  .to(P3, { autoAlpha: 1, duration: 0.28 }, 0.72);
+  .to(P3, { autoAlpha: 1, duration: 0.0991 }, 0.9009);
 ```
 
 ## data-speed 决策：**去除**
@@ -165,7 +166,8 @@ tl.to(P1, { autoAlpha: 0, scale: 0.99, ease: "power1.inOut", duration: 0.10 }, 0
 ## 决策记录（本次确认）
 
 1. **去 data-speed** —— 换取干净的单时间线 crossfade，消除 pin 内漂移，杜绝第二套系统。
-2. **3 页 · reading-paced ≈ 260vh** —— 停留 80% / 过渡 20%，过渡窗 ≈26vh。
+2. **3 页 · slow-paced ≈ 1310vh** —— 停留 28% / 过渡 72%，过渡窗 ≈468vh，停留 ≈139/102/129vh。
+   过渡（渐融）是流动感来源；停留是静止段，过短会回到「PPT 切换」感，过长则页面「卡住」。
 3. **opacity(`autoAlpha`) + 轻微 scale** —— scale 表「深度/浮现」，不用 y（避免「滑动」感）。
 4. **索引在 pin 释放后干净脱离** —— `Marquee` 作缝合带，索引段始终在 pin 外常规滚动。
 
@@ -176,8 +178,10 @@ tl.to(P1, { autoAlpha: 0, scale: 0.99, ease: "power1.inOut", duration: 0.10 }, 0
    transform 下失效，书页滚走 / P3 空白。
 3. **pin-hold + 单 timeline + data-speed**（过渡态）：pin 修好了「固定」，但 data-speed
    在 pin 内漂移，且过渡窗过长导致「文字叠文字」。
-4. **本版：pin-and-fade crossfade（确认）**：去 data-speed，`autoAlpha`+scale，
-   reading-paced 占比，干净索引脱离。
+4. **pin-and-fade crossfade（初版实现）**：去 data-speed，`autoAlpha`+scale，
+   reading-paced ≈260vh，干净索引脱离。
+5. **本版：慢速流动调参（确认）**：过渡窗放大到 ≈468vh、停留收短，过渡占 ~72%，
+   总跨度 ≈1310vh——让「渐融」主导、连续流动，而非被静止停留切成 PPT 段。
 
 ## 排期
 
