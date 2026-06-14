@@ -78,6 +78,11 @@ export function FloatingNav() {
     startTransition(() => setOpen(false));
   }, [pathname]);
 
+  // 小球隐藏（滚回顶部）时收起菜单，避免再次下滑时菜单残留为展开态
+  useEffect(() => {
+    if (!visible) startTransition(() => setOpen(false));
+  }, [visible]);
+
   const items: NavItem[] = user
     ? [
         { key: "search", label: "搜索", Icon: IconSearch, href: "/search" },
@@ -90,7 +95,9 @@ export function FloatingNav() {
           label: "退出登录",
           Icon: IconExit,
           onClick: () => {
-            void logout().then(() => router.push("/"));
+            void logout()
+              .then(() => router.push("/"))
+              .catch(() => undefined);
           },
         },
       ]

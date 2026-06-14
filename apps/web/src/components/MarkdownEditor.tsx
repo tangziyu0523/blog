@@ -58,6 +58,11 @@ export function MarkdownEditor({
       setError(`标签最长 ${MAX_TAG_LEN} 字`);
       return;
     }
+    if (tags.includes(t)) {
+      setError(null);
+      setTagInput("");
+      return;
+    }
     if (tags.length >= MAX_TAGS) {
       setError(`最多 ${MAX_TAGS} 个标签`);
       return;

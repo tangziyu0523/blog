@@ -161,7 +161,7 @@ export default function MyPostsPage() {
         ))}
       </ul>
 
-      {items.length < total && (
+      {!error && items.length < total && (
         <div className="mt-8 flex justify-center">
           <button
             type="button"
