@@ -6,6 +6,7 @@ import { AuthProvider } from "@/lib/auth-context";
 import { NotificationBell } from "@/components/NotificationBell";
 import { UserMenu } from "@/components/UserMenu";
 import { SmoothScroll } from "@/components/SmoothScroll";
+import { FloatingNav } from "@/components/FloatingNav";
 
 const playfair = Playfair_Display({ subsets: ["latin"], weight: ["600"], variable: "--font-display" });
 const lora = Lora({ subsets: ["latin"], weight: ["400"], variable: "--font-body" });
@@ -29,6 +30,7 @@ export default function RootLayout({
         <AuthProvider>
           <SmoothScroll>
             <header
+              id="site-header"
               className="flex justify-between px-6 py-4 border-b"
               style={{ borderColor: "var(--border)" }}
             >
@@ -45,6 +47,7 @@ export default function RootLayout({
             </header>
             {children}
           </SmoothScroll>
+          <FloatingNav />
         </AuthProvider>
       </body>
     </html>
