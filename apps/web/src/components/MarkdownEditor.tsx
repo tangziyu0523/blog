@@ -58,16 +58,12 @@ export function MarkdownEditor({
       setError(`标签最长 ${MAX_TAG_LEN} 字`);
       return;
     }
-    if (tags.includes(t)) {
-      setTagInput("");
-      return;
-    }
     if (tags.length >= MAX_TAGS) {
       setError(`最多 ${MAX_TAGS} 个标签`);
       return;
     }
     setError(null);
-    setTags([...tags, t]);
+    setTags((prev) => (prev.includes(t) ? prev : [...prev, t]));
     setTagInput("");
   }
 
@@ -76,20 +72,21 @@ export function MarkdownEditor({
       e.preventDefault();
       addTag();
     } else if (e.key === "Backspace" && tagInput === "" && tags.length > 0) {
-      setTags(tags.slice(0, -1));
+      setTags((prev) => prev.slice(0, -1));
     }
   }
 
-  function buildBody(): { title: string; contentMd: string; tags?: string[]; summary?: string } {
-    const md = getMarkdown();
-    const body: { title: string; contentMd: string; tags?: string[]; summary?: string } = {
+  // tags/summary are sent unconditionally: an empty array clears tags and `null`
+  // clears the summary on a PATCH. The backend only writes fields that are
+  // present, so omitting them would make removal impossible. The create
+  // endpoint accepts `[]` and `null` too (both fields are @IsOptional()).
+  function buildBody(): { title: string; contentMd: string; tags: string[]; summary: string | null } {
+    return {
       title,
-      contentMd: md,
+      contentMd: getMarkdown(),
+      tags,
+      summary: summary.trim() || null,
     };
-    if (tags.length > 0) body.tags = tags;
-    const s = summary.trim();
-    if (s) body.summary = s;
-    return body;
   }
 
   async function save(status: "DRAFT" | "PUBLISHED") {
@@ -178,7 +175,8 @@ export function MarkdownEditor({
             <button
               type="button"
               aria-label={`移除标签 ${t}`}
-              onClick={() => setTags(tags.filter((x) => x !== t))}
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => setTags((prev) => prev.filter((x) => x !== t))}
               style={{ color: "var(--text-3)" }}
             >
               ×
