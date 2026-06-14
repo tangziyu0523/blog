@@ -42,6 +42,12 @@ export default function EditPostPage({ params }: { params: Promise<{ slug: strin
   }
   if (!ready || !post) return null;
   return (
-    <MarkdownEditor postId={post.id} initialTitle={post.title} initialMarkdown={post.contentMd} />
+    <MarkdownEditor
+      postId={post.id}
+      initialTitle={post.title}
+      initialMarkdown={post.contentMd}
+      initialSummary={post.summary ?? ""}
+      initialTags={post.tags}
+    />
   );
 }
