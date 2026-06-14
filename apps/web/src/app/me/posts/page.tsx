@@ -13,13 +13,16 @@ function fmtDate(iso: string | null): string {
   return new Date(iso).toLocaleDateString("zh-CN");
 }
 
-function DeleteControl({ onDelete }: { onDelete: () => Promise<void> }) {
+function DeleteControl({ title, onDelete }: { title: string; onDelete: () => Promise<void> }) {
   const [confirming, setConfirming] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [failed, setFailed] = useState(false);
 
   if (!confirming) {
     return (
       <button
+        type="button"
+        aria-label={`删除《${title}》`}
         onClick={() => setConfirming(true)}
         style={{ color: "var(--text-3)" }}
       >
@@ -29,21 +32,33 @@ function DeleteControl({ onDelete }: { onDelete: () => Promise<void> }) {
   }
   return (
     <span className="flex items-center gap-2">
+      {failed && <span style={{ color: "var(--accent)" }}>删除失败</span>}
       <button
+        type="button"
         disabled={busy}
         onClick={async () => {
           setBusy(true);
+          setFailed(false);
           try {
             await onDelete();
+          } catch {
+            setFailed(true);
           } finally {
             setBusy(false);
           }
         }}
         style={{ color: "var(--accent)" }}
       >
-        {busy ? "删除中…" : "确定"}
+        {busy ? "删除中…" : failed ? "重试" : "确定"}
       </button>
-      <button onClick={() => setConfirming(false)} style={{ color: "var(--text-3)" }}>
+      <button
+        type="button"
+        onClick={() => {
+          setConfirming(false);
+          setFailed(false);
+        }}
+        style={{ color: "var(--text-3)" }}
+      >
         取消
       </button>
     </span>
@@ -61,7 +76,10 @@ export default function MyPostsPage() {
   useEffect(() => {
     if (!ready) return;
     let active = true;
-    startTransition(() => setLoading(true));
+    startTransition(() => {
+      setLoading(true);
+      setError(null);
+    });
     fetchMyPosts(page, PAGE_SIZE)
       .then((res) => {
         if (!active) return;
@@ -92,9 +110,11 @@ export default function MyPostsPage() {
       <h1 className="text-4xl" style={{ fontFamily: "var(--font-display)" }}>
         我的文章
       </h1>
-      <p className="mt-2 text-sm" style={{ color: "var(--text-3)" }}>
-        共 {total} 篇
-      </p>
+      {total > 0 && (
+        <p className="mt-2 text-sm" style={{ color: "var(--text-3)" }}>
+          共 {total} 篇
+        </p>
+      )}
 
       <hr className="my-8" style={{ borderColor: "var(--border)" }} />
 
@@ -122,19 +142,20 @@ export default function MyPostsPage() {
                 style={{ fontFamily: "var(--font-body)", fontStyle: "italic", color: "var(--text-3)" }}
               >
                 {p.status === "PUBLISHED" ? "已发布" : "草稿"}
-                {p.publishedAt ? ` · ${fmtDate(p.publishedAt)}` : ""} · {p.likeCount} 喜欢
+                {p.publishedAt ? ` · ${fmtDate(p.publishedAt)}` : ""}
+                {p.status === "PUBLISHED" ? ` · ${p.likeCount} 喜欢` : ""}
               </div>
             </div>
             <div className="flex shrink-0 items-center gap-4 text-sm">
-              <Link href={`/editor/${p.slug}`} style={{ color: "var(--text-2)" }}>
+              <Link href={`/editor/${p.slug}`} aria-label={`编辑《${p.title}》`} style={{ color: "var(--text-2)" }}>
                 编辑
               </Link>
               {p.status === "PUBLISHED" && (
-                <Link href={`/posts/${p.slug}`} style={{ color: "var(--text-2)" }}>
+                <Link href={`/posts/${p.slug}`} aria-label={`查看《${p.title}》`} style={{ color: "var(--text-2)" }}>
                   查看
                 </Link>
               )}
-              <DeleteControl onDelete={() => onDelete(p.id)} />
+              <DeleteControl title={p.title} onDelete={() => onDelete(p.id)} />
             </div>
           </li>
         ))}
@@ -143,6 +164,7 @@ export default function MyPostsPage() {
       {items.length < total && (
         <div className="mt-8 flex justify-center">
           <button
+            type="button"
             disabled={loading}
             onClick={() => setPage((n) => n + 1)}
             className="rounded-full border px-5 py-2 disabled:opacity-50"
