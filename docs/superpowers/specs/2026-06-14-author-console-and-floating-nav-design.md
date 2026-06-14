@@ -104,14 +104,14 @@
 
 **菜单项**（镜像顶栏 + 新入口）：
 
-- 已登录：`搜索` · `通知`（带未读红点，复用 `NotificationBell` 的未读数据源，行为与铃铛一致）· `写文章`(→`/editor/new`) · `我的文章`(→`/me/posts`) · `设置`(→`/settings`) · `退出登录`（仅悬停出标签，误触风险低）
+- 已登录：`搜索` · `通知`（带未读红点；用轻量 `useUnreadCount` hook 拉取未读数显示红点，点击滚回页面顶部让顶栏铃铛接管展开——不重构 `NotificationBell`）· `写文章`(→`/editor/new`) · `我的文章`(→`/me/posts`) · `设置`(→`/settings`) · `退出登录`（仅悬停出标签，误触风险低）
 - 未登录：`搜索` · `登录`(→`/login`)
 
 ## 工程约束
 
 - 纯 `apps/web`，后端不改、Prisma 不动。
 - 任务结束前 `pnpm verify`（lint + typecheck + test）必须全绿——Stop hook 守门，不绕过。
-- 可测逻辑（可见性 hook、删除确认状态机、tags/summary 入 body 的组装）按仓库现有前端测试约定补测试；纯展示组件不强求。
+- `apps/web` 目前无测试运行器（仅 `lint` + `typecheck` 脚本，整个 web 零单测）。**本次不引入新测试基建**，跟随 web 现有约定：门禁 = `pnpm verify` 全绿（对 web 实为 lint + typecheck）+ 手动跑一遍验证。纯逻辑（可见性判断、删除确认状态、tags/summary 入 body 的组装、菜单项列表）抽成独立纯函数/hook，靠 strict typecheck 兜底。
 - TypeScript strict，禁止 `any`；公共类型继续用 `@blog/shared`。
 - 提交规范 Conventional Commits，一个提交一件事，按 1→4 顺序推进。
 
@@ -120,6 +120,8 @@
 - 管理页路由：`/me/posts`
 - 小球菜单保留「退出登录」（悬停才出标签）
 - 图标用自绘 1px 线条 SVG，不复用博物学插图
+- 不引入前端测试运行器，门禁为 typecheck + lint + 手动验证
+- 小球「通知」项只显未读红点、点击滚回顶部，不重构 `NotificationBell`
 
 ## 非目标（YAGNI）
 
