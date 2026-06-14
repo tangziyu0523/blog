@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { startTransition, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { ScrollSmoother } from "gsap/ScrollSmoother";
 import { useAuth } from "@/lib/auth-context";
 import { useUnreadCount } from "@/lib/use-unread-count";
@@ -42,6 +42,7 @@ export function FloatingNav() {
   const [visible, setVisible] = useState(false);
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const pathname = usePathname();
 
   // 顶栏滚出视口后才显形。IntersectionObserver 在 ScrollSmoother transform 下仍按渲染位置判断。
   useEffect(() => {
@@ -71,6 +72,11 @@ export function FloatingNav() {
       document.removeEventListener("keydown", onKey);
     };
   }, [open]);
+
+  // 路由切换后收起菜单（覆盖后退/外部跳转等不经过菜单项 onClick 的情况）
+  useEffect(() => {
+    startTransition(() => setOpen(false));
+  }, [pathname]);
 
   const items: NavItem[] = user
     ? [
@@ -113,7 +119,7 @@ export function FloatingNav() {
     );
     const label = (
       <span
-        className="pointer-events-none absolute right-14 top-1/2 -translate-y-1/2 whitespace-nowrap rounded border px-2 py-1 text-xs opacity-0 transition-opacity group-hover:opacity-100"
+        className="pointer-events-none absolute right-14 top-1/2 -translate-y-1/2 whitespace-nowrap rounded border px-2 py-1 text-xs opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100"
         style={{ borderColor: "var(--border)", background: "var(--surface)", color: "var(--text-2)" }}
       >
         {item.label}
@@ -156,7 +162,7 @@ export function FloatingNav() {
       {open && <div className="flex flex-col items-center gap-3">{items.map(renderItem)}</div>}
       <button
         type="button"
-        aria-label="导航"
+        aria-label={open ? "关闭导航" : "打开导航"}
         aria-expanded={open}
         onClick={() => setOpen((v) => !v)}
         className="flex items-center justify-center rounded-full border shadow-md"
