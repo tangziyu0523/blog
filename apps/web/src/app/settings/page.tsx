@@ -32,7 +32,7 @@ export default function SettingsPage() {
   }, [user]);
 
   if (!ready || !user) {
-    return <main className="mx-auto max-w-lg px-6 py-24" />;
+    return <main className="mx-auto max-w-lg px-6 pb-24" />;
   }
 
   async function onPickAvatar(e: React.ChangeEvent<HTMLInputElement>) {
@@ -89,7 +89,7 @@ export default function SettingsPage() {
   const cardStyle = { borderColor: "var(--border)", background: "var(--surface)" };
 
   return (
-    <main className="mx-auto max-w-lg px-6 py-16">
+    <main className="mx-auto max-w-lg px-6 pb-16">
       <h1 className="text-3xl" style={{ fontFamily: "var(--font-display)" }}>
         设置
       </h1>

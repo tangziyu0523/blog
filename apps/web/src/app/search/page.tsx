@@ -75,7 +75,7 @@ function SearchInner() {
   const totalPages = data ? Math.max(1, Math.ceil(data.total / data.pageSize)) : 1;
 
   return (
-    <main className="mx-auto max-w-3xl px-6 py-16">
+    <main className="mx-auto max-w-3xl px-6 pb-16">
       <BackButton />
       <h1 className="text-4xl" style={{ fontFamily: "var(--font-display)" }}>
         搜索

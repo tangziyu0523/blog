@@ -5,6 +5,7 @@ import { AuthProvider } from "@/lib/auth-context";
 import { SmoothScroll } from "@/components/SmoothScroll";
 import { ScrollManager } from "@/components/ScrollManager";
 import { SiteHeader } from "@/components/SiteHeader";
+import { HomeModeProvider } from "@/components/HomeModeProvider";
 
 const playfair = Playfair_Display({ subsets: ["latin"], weight: ["600"], variable: "--font-display" });
 const lora = Lora({ subsets: ["latin"], weight: ["400"], variable: "--font-body" });
@@ -26,9 +27,11 @@ export default function RootLayout({
     >
       <body className="min-h-full">
         <AuthProvider>
-          <SiteHeader />
-          <ScrollManager />
-          <SmoothScroll>{children}</SmoothScroll>
+          <HomeModeProvider>
+            <SiteHeader />
+            <ScrollManager />
+            <SmoothScroll>{children}</SmoothScroll>
+          </HomeModeProvider>
         </AuthProvider>
       </body>
     </html>

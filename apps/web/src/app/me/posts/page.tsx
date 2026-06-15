@@ -106,7 +106,7 @@ export default function MyPostsPage() {
   if (!ready) return null;
 
   return (
-    <main className="mx-auto max-w-3xl px-6 py-16">
+    <main className="mx-auto max-w-3xl px-6 pb-16">
       <h1 className="text-4xl" style={{ fontFamily: "var(--font-display)" }}>
         我的文章
       </h1>

@@ -1,27 +1,21 @@
 import { codeToHtml } from "shiki";
+import { renderProse } from "@/lib/markdown";
 
 type Block =
   | { type: "code"; lang: string; code: string }
-  | { type: "text"; text: string };
+  | { type: "prose"; text: string };
 
-function escapeHtml(s: string): string {
-  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-}
-
-// Tokenize markdown into atomic code blocks + prose blocks. Fenced code is
-// captured whole (including internal blank lines) BEFORE prose is split on
-// blank lines, so code samples never get shredded into stray paragraphs.
+// Split markdown into fenced code blocks (rendered by Shiki) and prose chunks
+// (rendered by the pure parser). Fenced code is captured whole first so its
+// contents are never parsed as prose.
 function tokenize(markdown: string): Block[] {
   const lines = markdown.split("\n");
   const blocks: Block[] = [];
   let buf: string[] = [];
 
   const flushProse = (): void => {
-    const joined = buf.join("\n");
-    for (const para of joined.split(/\n\n+/)) {
-      const t = para.trim();
-      if (t) blocks.push({ type: "text", text: t });
-    }
+    const text = buf.join("\n");
+    if (text.trim()) blocks.push({ type: "prose", text });
     buf = [];
   };
 
@@ -48,19 +42,19 @@ function tokenize(markdown: string): Block[] {
   return blocks;
 }
 
+function escapeHtml(s: string): string {
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
 async function renderBlock(block: Block): Promise<string> {
   if (block.type === "code") {
     try {
       return await codeToHtml(block.code, { lang: block.lang, theme: "github-light" });
     } catch {
-      // Unknown language → plain escaped code block (avoid a render-time throw).
       return `<pre><code>${escapeHtml(block.code)}</code></pre>`;
     }
   }
-  const text = block.text;
-  if (text.startsWith("# ")) return `<h1>${escapeHtml(text.slice(2))}</h1>`;
-  if (text.startsWith("## ")) return `<h2>${escapeHtml(text.slice(3))}</h2>`;
-  return `<p>${escapeHtml(text)}</p>`;
+  return renderProse(block.text);
 }
 
 export async function MarkdownRenderer({ markdown }: { markdown: string }) {
