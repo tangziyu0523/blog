@@ -14,6 +14,7 @@ export function toSummary(p: PostWithAuthor): PostSummary {
     tags: p.tags,
     status: p.status,
     likeCount: p.likeCount,
+    viewCount: p.viewCount,
     publishedAt: p.publishedAt ? p.publishedAt.toISOString() : null,
     author: {
       id: p.author.id,

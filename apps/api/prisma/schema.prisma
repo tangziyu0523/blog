@@ -43,6 +43,7 @@ model Post {
   tagsTokens  String     @default("")
   status      PostStatus @default(DRAFT)
   likeCount    Int        @default(0)
+  viewCount    Int        @default(0)
   commentCount Int        @default(0)
   authorId     String
   author      User       @relation(fields: [authorId], references: [id])

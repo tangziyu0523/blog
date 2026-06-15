@@ -14,6 +14,7 @@ const prismaMock = {
     count: jest.fn(),
   },
   like: { findUnique: jest.fn() },
+  $queryRaw: jest.fn(),
 };
 const notificationsMock = { notifyNewPost: jest.fn() };
 
@@ -42,6 +43,7 @@ describe('PostsService.create', () => {
       tags: [],
       status: 'DRAFT',
       likeCount: 0,
+      viewCount: 0,
       authorId: 'u1',
       publishedAt: null,
       createdAt: new Date(),
@@ -71,6 +73,7 @@ describe('PostsService.create', () => {
         tags: [],
         status: 'DRAFT',
         likeCount: 0,
+        viewCount: 0,
         authorId: 'u1',
         publishedAt: null,
         createdAt: new Date(),
@@ -109,6 +112,7 @@ describe('PostsService read/update/delete', () => {
     tags: [],
     status: 'PUBLISHED',
     likeCount: 0,
+    viewCount: 0,
     authorId: 'u1',
     publishedAt: new Date(),
     createdAt: new Date(),
@@ -175,6 +179,7 @@ describe('PostsService read/update/delete', () => {
       tags: [],
       status: 'PUBLISHED',
       likeCount: 0,
+      viewCount: 0,
       commentCount: 0,
       authorId: 'u1',
       publishedAt: new Date(),
@@ -213,5 +218,47 @@ describe('PostsService read/update/delete', () => {
     const d = await service.getBySlug('s', 'u1');
     expect(d.status).toBe('DRAFT');
     expect(d.viewerLiked).toBe(false);
+  });
+});
+
+describe('PostsService.list sort', () => {
+  let service: PostsService;
+  beforeEach(async () => {
+    jest.resetAllMocks();
+    const moduleRef = await Test.createTestingModule({
+      providers: [
+        PostsService,
+        { provide: PrismaService, useValue: prismaMock },
+        { provide: NotificationsService, useValue: notificationsMock },
+      ],
+    }).compile();
+    service = moduleRef.get(PostsService);
+  });
+
+  it('hot: orders by raw hot-score query then reorders rows by returned ids', async () => {
+    prismaMock.$queryRaw.mockResolvedValue([{ id: 'p2' }, { id: 'p1' }]);
+    prismaMock.post.count.mockResolvedValue(2);
+    prismaMock.post.findMany.mockResolvedValue([
+      { id: 'p1', slug: 's1', title: 'T1', summary: null, tags: [], status: 'PUBLISHED', likeCount: 0, viewCount: 0, commentCount: 0, publishedAt: new Date(), author },
+      { id: 'p2', slug: 's2', title: 'T2', summary: null, tags: [], status: 'PUBLISHED', likeCount: 0, viewCount: 0, commentCount: 0, publishedAt: new Date(), author },
+    ]);
+
+    const res = await service.list({ page: 1, pageSize: 10, mine: false, sort: 'hot' });
+
+    expect(prismaMock.$queryRaw).toHaveBeenCalledTimes(1);
+    const sql = prismaMock.$queryRaw.mock.calls[0][0];
+    expect(sql.values).toEqual(expect.arrayContaining([10, 4, 1, 1.5]));
+    expect(res.items.map((i) => i.id)).toEqual(['p2', 'p1']);
+    expect(res.total).toBe(2);
+  });
+
+  it('latest (default): uses findMany, not the raw query', async () => {
+    prismaMock.post.findMany.mockResolvedValue([]);
+    prismaMock.post.count.mockResolvedValue(0);
+
+    await service.list({ page: 1, pageSize: 10, mine: false });
+
+    expect(prismaMock.$queryRaw).not.toHaveBeenCalled();
+    expect(prismaMock.post.findMany).toHaveBeenCalled();
   });
 });

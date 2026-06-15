@@ -14,6 +14,7 @@ export interface PostSummary {
   tags: string[];
   status: PostStatus;
   likeCount: number;
+  viewCount: number;
   publishedAt: string | null; // ISO string over the wire
   author: PostAuthor;
   highlight?: string; // server-built snippet (only <b> tags); present on search results

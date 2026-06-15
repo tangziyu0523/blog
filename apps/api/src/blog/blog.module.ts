@@ -3,11 +3,12 @@ import { PrismaModule } from '../prisma/prisma.module';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { PostsService } from './posts.service';
 import { LikesService } from './likes.service';
+import { ViewCountService } from './view-count.service';
 import { PostsController } from './posts.controller';
 
 @Module({
   imports: [PrismaModule, NotificationsModule],
   controllers: [PostsController],
-  providers: [PostsService, LikesService],
+  providers: [PostsService, LikesService, ViewCountService],
 })
 export class BlogModule {}
