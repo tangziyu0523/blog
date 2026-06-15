@@ -1,31 +1,17 @@
-import { fetchPublishedPosts } from "@/lib/posts";
-import { PostCard } from "@/components/PostCard";
+import { fetchPosts } from "@/lib/posts";
 import { Masthead } from "@/components/Masthead";
-import { HeadlinePost } from "@/components/HeadlinePost";
-import { ScrollReveal } from "@/components/ScrollReveal";
-import { HeroZone } from "@/components/HeroZone";
 import { RevealText } from "@/components/RevealText";
+import { HeroZone } from "@/components/HeroZone";
 import { ChapterStage } from "@/components/ChapterStage";
 import { Marquee } from "@/components/Marquee";
-import {
-  Butterfly2,
-  Foliage2,
-  Bird1,
-  Flower2,
-  Butterfly4,
-  Foliage3,
-} from "@/components/illustrations";
+import { PostList } from "@/components/PostList";
+import { Bird1, Flower2 } from "@/components/illustrations";
 
-// Plates rotated through the list rows that earn an illustration.
-const LIST_PLATES = [Butterfly2, Foliage2, Bird1, Flower2, Butterfly4, Foliage3];
-
-// Full-viewport book page; also the reduced-motion stacked-page unit.
 const PAGE = "flex min-h-screen flex-col justify-center";
 const KICKER = "font-sans text-[10px] uppercase tracking-[0.25em]";
 
 export default async function Home() {
-  const { items, total } = await fetchPublishedPosts();
-  const [headline, ...rest] = items;
+  const initial = await fetchPosts("latest");
 
   return (
     <main className="mx-auto w-full max-w-5xl px-6 pb-24">
@@ -34,7 +20,7 @@ export default async function Home() {
         <ChapterStage>
           {/* Page 1 — the masthead spread */}
           <section className={PAGE}>
-            <Masthead issue={total} />
+            <Masthead issue={initial.total} />
             <RevealText
               className="mt-8 max-w-2xl"
               style={{
@@ -120,35 +106,7 @@ export default async function Home() {
           style={{ borderColor: "var(--border)" }}
         />
 
-        {items.length === 0 && (
-          <p className="mt-16" style={{ color: "var(--text-3)" }}>
-            还没有发布的文章。
-          </p>
-        )}
-
-        {items.length > 0 && <HeadlinePost post={headline} />}
-
-        {rest.length > 0 && (
-          <ScrollReveal key={`home-${items.length}`}>
-            <section className="mt-16">
-              {rest.map((post, i) => {
-                // Rhythm: every other row carries a mid-size plate.
-                const withPlate = i % 2 === 0;
-                const Plate = withPlate
-                  ? LIST_PLATES[Math.floor(i / 2) % LIST_PLATES.length]
-                  : undefined;
-                return (
-                  <PostCard
-                    key={post.id}
-                    post={post}
-                    index={i + 2}
-                    illustration={Plate}
-                  />
-                );
-              })}
-            </section>
-          </ScrollReveal>
-        )}
+        <PostList initial={initial} />
       </HeroZone>
     </main>
   );
