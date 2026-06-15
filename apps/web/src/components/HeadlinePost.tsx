@@ -47,7 +47,7 @@ export function HeadlinePost({ post }: { post: PostSummary }) {
 
           <div className={`mt-4 ${TINY}`} style={{ color: "var(--text-2)" }}>
             {(post.tags[0] ?? "Field Notes")} · {fmtDate(post.publishedAt)} ·{" "}
-            {post.likeCount} likes
+            {post.likeCount} likes · {post.viewCount} views
           </div>
 
           <Link href={`/posts/${post.slug}`}>

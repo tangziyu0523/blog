@@ -35,7 +35,7 @@ export function PostCard({
   const meta = (
     <div className={TINY} style={{ color: "var(--text-2)" }}>
       {(post.tags[0] ?? "Field Notes")} · {fmtDate(post.publishedAt)} ·{" "}
-      {post.likeCount} likes
+      {post.likeCount} likes · {post.viewCount} views
     </div>
   );
 
