@@ -6,7 +6,7 @@ import type { Paginated, PostSummary } from "@blog/shared";
 import { searchPosts } from "@/lib/search";
 import { sanitizeHighlight } from "@/lib/sanitize-highlight";
 import { PostCard } from "@/components/PostCard";
-import { Foliage2 } from "@/components/illustrations";
+import { Foliage2, Foliage4 } from "@/components/illustrations";
 import { BackButton } from "@/components/BackButton";
 
 function Result({ post }: { post: PostSummary }) {
@@ -102,7 +102,12 @@ function SearchInner() {
       {!q.trim() && (
         <p style={{ color: "var(--text-3)" }}>输入关键词，查找已发布的文章。</p>
       )}
-      {loading && <p style={{ color: "var(--text-3)" }}>搜索中…</p>}
+      {loading && (
+        <div className="flex flex-col items-center gap-3 py-6">
+          <Foliage4 width={64} height={64} className="opacity-60" />
+          <p style={{ color: "var(--text-3)" }}>搜索中…</p>
+        </div>
+      )}
       {error && <p style={{ color: "var(--text-3)" }}>{error}</p>}
 
       {q.trim() && !loading && !error && data && data.total === 0 && (
