@@ -12,7 +12,7 @@ test('new blog error codes exist', () => {
 test('PostDetail shape compiles', () => {
   const d: PostDetail = {
     id: 'p1', slug: 's', title: 't', summary: null, tags: [],
-    status: 'DRAFT', likeCount: 0, publishedAt: null,
+    status: 'DRAFT', likeCount: 0, viewCount: 0, publishedAt: null,
     author: { id: 'u1', nickname: 'n', avatarUrl: null },
     contentMd: '# hi', createdAt: 'x', updatedAt: 'x', viewerLiked: false,
   };
