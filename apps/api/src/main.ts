@@ -1,4 +1,5 @@
 import { NestFactory } from '@nestjs/core';
+import type { NestExpressApplication } from '@nestjs/platform-express';
 import { ValidationPipe } from '@nestjs/common';
 import type { ValidationError } from '@nestjs/common';
 import cookieParser from 'cookie-parser';
@@ -9,7 +10,8 @@ import { AppError } from './common/app-error';
 import { ErrorCode } from '@blog/shared';
 
 async function bootstrap(): Promise<void> {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
+  app.set('trust proxy', true);
   const config = app.get(ConfigService);
   app.use(cookieParser());
   app.enableCors({

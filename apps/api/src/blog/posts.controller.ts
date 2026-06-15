@@ -8,13 +8,17 @@ import {
   Patch,
   Post,
   Query,
+  Req,
   UseGuards,
 } from '@nestjs/common';
+import type { Request } from 'express';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { OptionalJwtGuard } from '../auth/guards/optional-jwt.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { PostsService } from './posts.service';
 import { LikesService } from './likes.service';
+import { ViewCountService } from './view-count.service';
+import { viewerKeyFor } from './viewer-key';
 import { CreatePostDto } from './dto/create-post.dto';
 import { UpdatePostDto } from './dto/update-post.dto';
 import { ListPostsQuery } from './dto/list-posts.query';
@@ -26,6 +30,7 @@ export class PostsController {
   constructor(
     private readonly posts: PostsService,
     private readonly likes: LikesService,
+    private readonly views: ViewCountService,
   ) {}
 
   @Post()
@@ -45,7 +50,20 @@ export class PostsController {
       pageSize: q.pageSize ?? 10,
       mine,
       userId: user?.userId,
+      sort: q.sort ?? 'latest',
     });
+  }
+
+  @Post(':id/view')
+  @HttpCode(204)
+  @UseGuards(OptionalJwtGuard)
+  async view(
+    @CurrentUser() user: Viewer,
+    @Param('id') id: string,
+    @Req() req: Request,
+  ): Promise<void> {
+    const key = viewerKeyFor(user?.userId, req.ip, req.headers['user-agent']);
+    await this.views.record(id, key);
   }
 
   @Get(':slug')

@@ -1,5 +1,5 @@
 import { Type } from 'class-transformer';
-import { IsBooleanString, IsInt, IsOptional, Max, Min } from 'class-validator';
+import { IsBooleanString, IsIn, IsInt, IsOptional, Max, Min } from 'class-validator';
 
 export class ListPostsQuery {
   @IsOptional()
@@ -18,4 +18,8 @@ export class ListPostsQuery {
   @IsOptional()
   @IsBooleanString()
   mine?: string; // '1' / 'true'
+
+  @IsOptional()
+  @IsIn(['latest', 'hot'])
+  sort?: 'latest' | 'hot';
 }
