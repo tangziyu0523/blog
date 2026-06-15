@@ -1,6 +1,6 @@
 "use client";
 
-import { startTransition, useState } from "react";
+import { startTransition, useEffect, useState } from "react";
 import type { Paginated, PostSummary } from "@blog/shared";
 import { PostCard } from "@/components/PostCard";
 import { HeadlinePost } from "@/components/HeadlinePost";
@@ -42,7 +42,14 @@ export function PostList({ initial }: { initial: Paginated<PostSummary> }) {
       .finally(() => startTransition(() => setLoading(false)));
   }
 
-  const items = cache[tab] ?? [];
+  // Keep showing the last-loaded list while a newly selected tab is fetching, so
+  // switching never collapses to an empty list mid-fetch.
+  const loaded = cache[tab];
+  const [shown, setShown] = useState<PostSummary[]>(initial.items);
+  useEffect(() => {
+    if (loaded) startTransition(() => setShown(loaded));
+  }, [loaded]);
+  const items = shown;
   const [headline, ...rest] = items;
 
   return (
@@ -79,7 +86,7 @@ export function PostList({ initial }: { initial: Paginated<PostSummary> }) {
       {headline && <HeadlinePost post={headline} />}
 
       {rest.length > 0 && (
-        <ScrollReveal key={`${tab}-${items.length}`}>
+        <ScrollReveal>
           <section className="mt-16">
             {rest.map((post, i) => {
               const withPlate = i % 2 === 0;
