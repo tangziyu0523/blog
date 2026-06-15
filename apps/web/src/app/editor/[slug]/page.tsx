@@ -35,7 +35,7 @@ export default function EditPostPage({ params }: { params: Promise<{ slug: strin
 
   if (error) {
     return (
-      <p className="mx-auto max-w-3xl px-6 py-24" style={{ color: "var(--accent)" }}>
+      <p className="mx-auto max-w-3xl px-6 pb-24" style={{ color: "var(--accent)" }}>
         {error}
       </p>
     );

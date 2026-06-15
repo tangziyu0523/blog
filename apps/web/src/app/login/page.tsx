@@ -59,7 +59,7 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="mx-auto max-w-sm px-6 py-24">
+    <main className="mx-auto max-w-sm px-6 pb-24">
       <BackButton />
       <h1 className="text-3xl" style={{ fontFamily: "var(--font-display)" }}>
         登录

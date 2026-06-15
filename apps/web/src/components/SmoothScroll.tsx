@@ -67,7 +67,9 @@ export function SmoothScroll({ children }: { children: ReactNode }) {
 
   return (
     <div id="smooth-wrapper" ref={wrapperRef}>
-      <div id="smooth-content" ref={contentRef}>
+      {/* Clear the fixed header on every natively-scrolled view; the smoothed intro
+          needs no clearance (its hero is centered and the header overlays empty top). */}
+      <div id="smooth-content" ref={contentRef} className={smoothed ? undefined : "pt-20"}>
         {children}
       </div>
     </div>

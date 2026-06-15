@@ -143,7 +143,7 @@ export function MarkdownEditor({
   }
 
   return (
-    <div className="mx-auto max-w-3xl px-6 py-12">
+    <div className="mx-auto max-w-3xl px-6 pb-12">
       <input
         value={title}
         onChange={(e) => setTitle(e.target.value)}

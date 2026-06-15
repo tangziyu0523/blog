@@ -35,7 +35,7 @@ export default async function PostPage({ params }: { params: Promise<{ slug: str
   const Plate = PLATES[pickPlateIndex(post.slug, PLATES.length)];
 
   return (
-    <main className="mx-auto max-w-3xl px-6 pb-24 pt-16">
+    <main className="mx-auto max-w-3xl px-6 pb-24">
       <BackButton />
       <ViewPing postId={post.id} />
 
