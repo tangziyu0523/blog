@@ -7,6 +7,8 @@ import { api, ApiClientError } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import { authErrorMessage } from "@/lib/auth-errors";
 import type { AuthUser } from "@blog/shared";
+import { BackButton } from "@/components/BackButton";
+import { Foliage1 } from "@/components/illustrations";
 
 const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -59,9 +61,11 @@ export default function RegisterPage() {
 
   return (
     <main className="mx-auto max-w-sm px-6 py-24">
+      <BackButton />
       <h1 className="text-3xl" style={{ fontFamily: "var(--font-display)" }}>
         注册
       </h1>
+      <Foliage1 width={72} height={72} className="mt-4 opacity-70" />
       <form onSubmit={submit} className="mt-8 flex flex-col gap-4">
         <label htmlFor="email" className="flex flex-col gap-1" style={{ color: "var(--text-2)" }}>
           邮箱
