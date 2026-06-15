@@ -6,6 +6,8 @@ export const LIST_OFFSET_KEY = 'home:listOffset';
 export const TO_INDEX_KEY = 'home:toIndex';
 /** window event: "文章列表" was clicked while already on the home route. */
 export const SCROLL_TO_INDEX_EVENT = 'home:scroll-to-index';
+/** window event: the logo was clicked while already on the home route. */
+export const HOME_INTRO_EVENT = 'home:intro';
 
 /** Where the home route should position itself on mount. */
 export type HomeLanding = { mode: 'top' } | { mode: 'index'; offset: number };

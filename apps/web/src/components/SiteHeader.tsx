@@ -6,6 +6,7 @@ import { ScrollSmoother } from "gsap/ScrollSmoother";
 import { useAuth } from "@/lib/auth-context";
 import { UserMenu } from "./UserMenu";
 import { IndexLink } from "./IndexLink";
+import { BrandLink } from "./BrandLink";
 import { decideHeaderVisible } from "@/lib/header-visibility";
 
 function currentScrollTop(): number {
@@ -54,9 +55,9 @@ export function SiteHeader() {
         transform: visible ? "translateY(0)" : "translateY(-100%)",
       }}
     >
-      <Link href="/" style={{ fontFamily: "var(--font-display)" }}>
+      <BrandLink style={{ fontFamily: "var(--font-display)" }}>
         Naturalist Journal
-      </Link>
+      </BrandLink>
       <nav className="flex items-center gap-4 text-sm">
         <IndexLink style={LINK}>文章列表</IndexLink>
         {user && (

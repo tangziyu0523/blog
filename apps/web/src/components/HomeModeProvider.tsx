@@ -11,6 +11,7 @@ import {
 import { usePathname } from "next/navigation";
 import { consumeNavType } from "@/lib/nav-history";
 import {
+  HOME_INTRO_EVENT,
   LIST_OFFSET_KEY,
   SCROLL_TO_INDEX_EVENT,
   consumeToIndexIntent,
@@ -51,11 +52,17 @@ export function HomeModeProvider({ children }: { children: ReactNode }) {
   }, [pathname]);
 
   // "文章列表" clicked while already on home → switch to list mode at the top.
+  // Logo clicked while already on home → switch to intro mode.
   useEffect(() => {
     if (!HOME_MODES_ENABLED) return;
     const onToIndex = (): void => setState({ mode: "list", listOffset: 0 });
+    const onToIntro = (): void => setState(INTRO);
     window.addEventListener(SCROLL_TO_INDEX_EVENT, onToIndex);
-    return () => window.removeEventListener(SCROLL_TO_INDEX_EVENT, onToIndex);
+    window.addEventListener(HOME_INTRO_EVENT, onToIntro);
+    return () => {
+      window.removeEventListener(SCROLL_TO_INDEX_EVENT, onToIndex);
+      window.removeEventListener(HOME_INTRO_EVENT, onToIntro);
+    };
   }, []);
 
   return <HomeModeContext.Provider value={state}>{children}</HomeModeContext.Provider>;
