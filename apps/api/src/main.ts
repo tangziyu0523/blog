@@ -11,8 +11,11 @@ import { ErrorCode } from '@blog/shared';
 
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
-  app.set('trust proxy', true);
   const config = app.get(ConfigService);
+  // Express 'trust proxy': 0 = use the real socket IP (spoof-proof with no proxy);
+  // set TRUST_PROXY=<n> for n reverse-proxy hops in production so req.ip is the
+  // real client (drives view-count dedup).
+  app.set('trust proxy', config.getOrThrow<number>('TRUST_PROXY'));
   app.use(cookieParser());
   app.enableCors({
     origin: config.getOrThrow<string>('WEB_ORIGIN'),

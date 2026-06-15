@@ -46,5 +46,14 @@ describe('PostsController', () => {
     await controller.view({ userId: 'u9' }, 'post-1', req);
     const [, key] = viewMock.record.mock.calls[0];
     expect(key).toBe('u:u9');
+    expect(viewMock.record).toHaveBeenCalledTimes(1);
+  });
+
+  it('list defaults sort to latest when omitted', () => {
+    postsMock.list.mockReturnValue({ items: [], total: 0, page: 1, pageSize: 10 });
+    controller.list(undefined, {} as never);
+    expect(postsMock.list).toHaveBeenCalledWith(
+      expect.objectContaining({ sort: 'latest' }),
+    );
   });
 });
