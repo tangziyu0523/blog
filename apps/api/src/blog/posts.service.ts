@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import type { Prisma } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { AppError } from '../common/app-error';
@@ -8,6 +8,7 @@ import { slugifyTitle, shortSuffix } from './slug';
 import { buildPostTokens } from '../search/post-tokens';
 import { toSummary, toDetail, type PostWithAuthor } from './post.mapper';
 import type { PostDetail, PostSummary, Paginated } from '@blog/shared';
+import { hotScoreSql } from './hotness';
 
 interface CreateInput {
   title: string;
@@ -67,7 +68,11 @@ export class PostsService {
     pageSize: number;
     mine: boolean;
     userId?: string;
+    sort?: 'latest' | 'hot';
   }): Promise<Paginated<PostSummary>> {
+    if (!opts.mine && opts.sort === 'hot') {
+      return this.listHot(opts.page, opts.pageSize);
+    }
     const where: Prisma.PostWhereInput =
       opts.mine && opts.userId
         ? { authorId: opts.userId }
@@ -91,6 +96,37 @@ export class PostsService {
       page: opts.page,
       pageSize: opts.pageSize,
     };
+  }
+
+  /** 「最热」：Postgres 实时按重力衰减分排序，再按 id 顺序取回带 author 的行。 */
+  private async listHot(
+    page: number,
+    pageSize: number,
+  ): Promise<Paginated<PostSummary>> {
+    const offset = (page - 1) * pageSize;
+    const ranked = await this.prisma.$queryRaw<{ id: string }[]>(Prisma.sql`
+      SELECT "id"
+      FROM "Post"
+      WHERE "status" = 'PUBLISHED'
+      ORDER BY ${hotScoreSql()} DESC
+      LIMIT ${pageSize} OFFSET ${offset}
+    `);
+    const ids = ranked.map((r) => r.id);
+    const [rows, total] = await Promise.all([
+      ids.length
+        ? this.prisma.post.findMany({
+            where: { id: { in: ids } },
+            include: { author: true },
+          })
+        : Promise.resolve([] as PostWithAuthor[]),
+      this.prisma.post.count({ where: { status: 'PUBLISHED' } }),
+    ]);
+    const byId = new Map((rows as PostWithAuthor[]).map((r) => [r.id, r]));
+    const items = ids
+      .map((id) => byId.get(id))
+      .filter((r): r is PostWithAuthor => r !== undefined)
+      .map(toSummary);
+    return { items, total, page, pageSize };
   }
 
   async getBySlug(slug: string, viewerId?: string): Promise<PostDetail> {
