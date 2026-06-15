@@ -1,13 +1,10 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { Playfair_Display, Lora, Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/lib/auth-context";
-import { NotificationBell } from "@/components/NotificationBell";
-import { UserMenu } from "@/components/UserMenu";
 import { SmoothScroll } from "@/components/SmoothScroll";
-import { FloatingNav } from "@/components/FloatingNav";
 import { ScrollManager } from "@/components/ScrollManager";
+import { SiteHeader } from "@/components/SiteHeader";
 
 const playfair = Playfair_Display({ subsets: ["latin"], weight: ["600"], variable: "--font-display" });
 const lora = Lora({ subsets: ["latin"], weight: ["400"], variable: "--font-body" });
@@ -29,27 +26,9 @@ export default function RootLayout({
     >
       <body className="min-h-full">
         <AuthProvider>
+          <SiteHeader />
           <ScrollManager />
-          <SmoothScroll>
-            <header
-              id="site-header"
-              className="flex justify-between px-6 py-4 border-b"
-              style={{ borderColor: "var(--border)" }}
-            >
-              <Link href="/" style={{ fontFamily: "var(--font-display)" }}>
-                Naturalist Journal
-              </Link>
-              <div className="flex items-center gap-4">
-                <Link href="/search" style={{ color: "var(--text-2)" }}>
-                  搜索
-                </Link>
-                <NotificationBell />
-                <UserMenu />
-              </div>
-            </header>
-            {children}
-          </SmoothScroll>
-          <FloatingNav />
+          <SmoothScroll>{children}</SmoothScroll>
         </AuthProvider>
       </body>
     </html>

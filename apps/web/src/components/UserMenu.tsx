@@ -48,6 +48,22 @@ export function UserMenu() {
           style={{ borderColor: "var(--border)", background: "var(--surface)" }}
         >
           <Link
+            href="/editor/new"
+            onClick={() => setOpen(false)}
+            className="block px-3 py-2 text-sm"
+            style={{ color: "var(--text)" }}
+          >
+            写文章
+          </Link>
+          <Link
+            href="/me/posts"
+            onClick={() => setOpen(false)}
+            className="block px-3 py-2 text-sm"
+            style={{ color: "var(--text)" }}
+          >
+            我的文章
+          </Link>
+          <Link
             href="/settings"
             onClick={() => setOpen(false)}
             className="block px-3 py-2 text-sm"
