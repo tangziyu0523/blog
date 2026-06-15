@@ -33,7 +33,7 @@ export default async function PostPage({ params }: { params: Promise<{ slug: str
       <PlateDivider illustration={Butterfly2} />
       <MarkdownRenderer markdown={post.contentMd} />
       <div className="my-8 flex flex-col items-center gap-3">
-        <Bird2 width={72} height={72} className="opacity-70" aria-hidden />
+        <Bird2 width={72} height={72} className="opacity-70" />
         <p className="text-center italic" style={{ color: "var(--text-3)" }}>
           ✦ Naturalis Historia ✦
         </p>

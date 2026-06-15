@@ -72,6 +72,12 @@ export function SmoothScroll({ children }: { children: ReactNode }) {
       return () => {
         window.removeEventListener("scroll", save);
         cancelAnimationFrame(raf);
+        // Flush the latest position before unmount so a fast navigate-away
+        // (clicking a post within the same frame as a scroll) isn't lost.
+        sessionStorage.setItem(
+          HOME_SCROLL_KEY,
+          String(Math.round(smoother.scrollTop())),
+        );
         smoother.kill();
       };
     },
@@ -103,6 +109,11 @@ export function SmoothScroll({ children }: { children: ReactNode }) {
     return () => {
       window.removeEventListener("scroll", save);
       cancelAnimationFrame(raf);
+      // Flush the latest position before unmount (see smoothed path above).
+      sessionStorage.setItem(
+        HOME_SCROLL_KEY,
+        String(Math.round(window.scrollY)),
+      );
     };
   }, [pathname]);
 
