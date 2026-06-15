@@ -106,7 +106,9 @@ export default async function Home() {
           style={{ borderColor: "var(--border)" }}
         />
 
-        <PostList initial={initial} />
+        <div id="article-index">
+          <PostList initial={initial} />
+        </div>
       </HeroZone>
     </main>
   );
