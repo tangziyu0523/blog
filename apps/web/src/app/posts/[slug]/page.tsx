@@ -5,6 +5,7 @@ import { LikeButton } from "@/components/LikeButton";
 import { CommentSection } from "@/components/CommentSection";
 import { FollowButton } from "@/components/FollowButton";
 import { ViewPing } from "@/components/ViewPing";
+import { BackButton } from "@/components/BackButton";
 
 export default async function PostPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
@@ -13,6 +14,7 @@ export default async function PostPage({ params }: { params: Promise<{ slug: str
 
   return (
     <main className="mx-auto max-w-3xl px-6 py-16">
+      <BackButton />
       <ViewPing postId={post.id} />
       <h1 className="text-4xl" style={{ fontFamily: "var(--font-display)" }}>{post.title}</h1>
       <p className="mt-2 italic" style={{ color: "var(--text-2)" }}>

@@ -7,6 +7,7 @@ import { searchPosts } from "@/lib/search";
 import { sanitizeHighlight } from "@/lib/sanitize-highlight";
 import { PostCard } from "@/components/PostCard";
 import { Foliage2 } from "@/components/illustrations";
+import { BackButton } from "@/components/BackButton";
 
 function Result({ post }: { post: PostSummary }) {
   return (
@@ -75,6 +76,7 @@ function SearchInner() {
 
   return (
     <main className="mx-auto max-w-3xl px-6 py-16">
+      <BackButton />
       <h1 className="text-4xl" style={{ fontFamily: "var(--font-display)" }}>
         搜索
       </h1>
