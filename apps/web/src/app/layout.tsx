@@ -7,6 +7,7 @@ import { NotificationBell } from "@/components/NotificationBell";
 import { UserMenu } from "@/components/UserMenu";
 import { SmoothScroll } from "@/components/SmoothScroll";
 import { FloatingNav } from "@/components/FloatingNav";
+import { ScrollManager } from "@/components/ScrollManager";
 
 const playfair = Playfair_Display({ subsets: ["latin"], weight: ["600"], variable: "--font-display" });
 const lora = Lora({ subsets: ["latin"], weight: ["400"], variable: "--font-body" });
@@ -28,6 +29,7 @@ export default function RootLayout({
     >
       <body className="min-h-full">
         <AuthProvider>
+          <ScrollManager />
           <SmoothScroll>
             <header
               id="site-header"
