@@ -15,9 +15,12 @@ export class ViewCountService {
 
   /**
    * Record one view for a post, deduped per viewer within a 12h window.
-   * View counting is best-effort: if Redis is unavailable we skip counting
-   * rather than fail the request (fail-open). Drafts / missing posts are a
-   * no-op because updateMany matches zero rows.
+   *
+   * Redis is best-effort: if the dedup check throws (Redis down) we skip
+   * counting and return rather than fail the request (fail-open). The DB
+   * increment, by contrast, is NOT swallowed — a Prisma error propagates to
+   * the caller. Drafts / missing posts are a no-op because updateMany matches
+   * zero rows.
    */
   async record(postId: string, viewerKey: string): Promise<void> {
     let isNew = false;
@@ -31,7 +34,10 @@ export class ViewCountService {
       );
       isNew = res === 'OK';
     } catch (err) {
-      this.logger.warn(`view dedup skipped: ${String(err)}`);
+      this.logger.warn(
+        'view dedup skipped (redis unavailable)',
+        err instanceof Error ? err.stack : String(err),
+      );
       return; // fail-open
     }
     if (!isNew) return;
