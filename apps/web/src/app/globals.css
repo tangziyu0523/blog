@@ -104,3 +104,24 @@ code, pre {
   font-size: 0.9rem;
   line-height: 1.6;
 }
+
+.ProseMirror img {
+  display: block;
+  width: 61.8%;
+  height: auto;
+  max-width: 100%;
+  margin: 1.2em auto;
+  border-radius: 6px;
+}
+@media (max-width: 640px) {
+  .ProseMirror img { width: 100%; }
+}
+.image-upload-placeholder {
+  display: inline-block;
+  padding: 0.1em 0.6em;
+  margin: 0 0.2em;
+  font-size: 0.85em;
+  color: var(--text-3);
+  background: var(--surface-2);
+  border-radius: 4px;
+}

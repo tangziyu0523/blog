@@ -4,9 +4,11 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
+import Image from "@tiptap/extension-image";
 import { Markdown } from "tiptap-markdown";
 import type { MarkdownStorage } from "tiptap-markdown";
 import { api, ApiClientError } from "@/lib/api";
+import { ImageUpload } from "@/lib/editor-image-upload";
 import type { PostDetail } from "@blog/shared";
 
 interface Props {
@@ -41,7 +43,12 @@ export function MarkdownEditor({
   const [error, setError] = useState<string | null>(null);
 
   const editor = useEditor({
-    extensions: [StarterKit, Markdown],
+    extensions: [
+      StarterKit,
+      Image.configure({ inline: false }),
+      ImageUpload.configure({ onError: setError }),
+      Markdown,
+    ],
     content: initialMarkdown,
     immediatelyRender: false,
   });
