@@ -90,6 +90,13 @@ describe('StorageService', () => {
     ).rejects.toMatchObject({ code: ErrorCode.INVALID_UPLOAD });
   });
 
+  it('confirmImage rejects when object is missing', async () => {
+    headMock.mockRejectedValue(new Error('NotFound'));
+    await expect(
+      service.confirmImage('u1', 'images/u1/abc.webp'),
+    ).rejects.toMatchObject({ code: ErrorCode.INVALID_UPLOAD });
+  });
+
   it('confirmImage rejects a non-webp content type', async () => {
     headMock.mockResolvedValue({ ContentLength: 1000, ContentType: 'image/png' });
     await expect(

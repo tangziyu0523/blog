@@ -113,6 +113,7 @@ export class StorageService {
     if ((head.ContentLength ?? 0) > IMAGE_MAX_BYTES) {
       throw new AppError(ErrorCode.INVALID_UPLOAD, 400, 'File too large');
     }
+    // Images are webp-only by design: the client transcodes to webp before PUT.
     if (head.ContentType !== 'image/webp') {
       throw new AppError(ErrorCode.INVALID_UPLOAD, 400, 'Unsupported content type');
     }
