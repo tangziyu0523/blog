@@ -1,5 +1,12 @@
 import { Type } from 'class-transformer';
-import { IsBooleanString, IsIn, IsInt, IsOptional, Max, Min } from 'class-validator';
+import {
+  IsBooleanString,
+  IsIn,
+  IsInt,
+  IsOptional,
+  Max,
+  Min,
+} from 'class-validator';
 
 export class ListPostsQuery {
   @IsOptional()

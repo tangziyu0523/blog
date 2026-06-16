@@ -239,11 +239,40 @@ describe('PostsService.list sort', () => {
     prismaMock.$queryRaw.mockResolvedValue([{ id: 'p2' }, { id: 'p1' }]);
     prismaMock.post.count.mockResolvedValue(2);
     prismaMock.post.findMany.mockResolvedValue([
-      { id: 'p1', slug: 's1', title: 'T1', summary: null, tags: [], status: 'PUBLISHED', likeCount: 0, viewCount: 0, commentCount: 0, publishedAt: new Date(), author },
-      { id: 'p2', slug: 's2', title: 'T2', summary: null, tags: [], status: 'PUBLISHED', likeCount: 0, viewCount: 0, commentCount: 0, publishedAt: new Date(), author },
+      {
+        id: 'p1',
+        slug: 's1',
+        title: 'T1',
+        summary: null,
+        tags: [],
+        status: 'PUBLISHED',
+        likeCount: 0,
+        viewCount: 0,
+        commentCount: 0,
+        publishedAt: new Date(),
+        author,
+      },
+      {
+        id: 'p2',
+        slug: 's2',
+        title: 'T2',
+        summary: null,
+        tags: [],
+        status: 'PUBLISHED',
+        likeCount: 0,
+        viewCount: 0,
+        commentCount: 0,
+        publishedAt: new Date(),
+        author,
+      },
     ]);
 
-    const res = await service.list({ page: 1, pageSize: 10, mine: false, sort: 'hot' });
+    const res = await service.list({
+      page: 1,
+      pageSize: 10,
+      mine: false,
+      sort: 'hot',
+    });
 
     expect(prismaMock.$queryRaw).toHaveBeenCalledTimes(1);
     const sql = prismaMock.$queryRaw.mock.calls[0][0];

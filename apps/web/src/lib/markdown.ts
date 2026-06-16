@@ -1,6 +1,10 @@
 /** Escape the HTML specials so authored text can never inject markup. */
 export function escapeHtml(s: string): string {
-  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
 }
 
 /** Allow only http(s)/mailto, root-relative, anchors, or scheme-less relative paths. */
@@ -11,6 +15,13 @@ function safeHref(url: string): string | null {
   if (/^[/#]/.test(u)) return u;
   if (/^[^:]+$/.test(u)) return u; // relative path, no scheme
   return null;
+}
+
+/** Build an <img> from an already-escaped alt and a raw url, or null if unsafe. */
+function renderImageTag(escapedAlt: string, url: string): string | null {
+  const href = safeHref(url);
+  if (!href) return null;
+  return `<img src="${href}" alt="${escapedAlt}" loading="lazy">`;
 }
 
 /**
@@ -26,6 +37,11 @@ export function renderInline(raw: string): string {
   s = s.replace(/`([^`]+)`/g, (_m, c: string) => {
     codes.push(c);
     return `\u0000${codes.length - 1}\u0000`;
+  });
+
+  // Images: ![alt](url). Must run before links, since ![..](..) contains [..](..).
+  s = s.replace(/!\[([^\]]*)\]\(([^)\s]+)\)/g, (m, alt: string, url: string) => {
+    return renderImageTag(alt, url) ?? m;
   });
 
   // Links: [text](url) with href validation.
@@ -65,6 +81,17 @@ export function renderProse(text: string): string {
     if (isBlank(line)) {
       i++;
       continue;
+    }
+
+    const imgOnly = /^!\[([^\]]*)\]\(([^)\s]+)\)$/.exec(line);
+    if (imgOnly) {
+      const tag = renderImageTag(escapeHtml(imgOnly[1]), imgOnly[2]);
+      if (tag) {
+        out.push(`<figure class="post-image">${tag}</figure>`);
+        i++;
+        continue;
+      }
+      // unsafe src: fall through and let it render as a normal paragraph
     }
 
     const h = /^(#{1,3})\s+(.*)$/.exec(line);
