@@ -98,23 +98,32 @@ describe('StorageService', () => {
   });
 
   it('confirmImage rejects a non-webp content type', async () => {
-    headMock.mockResolvedValue({ ContentLength: 1000, ContentType: 'image/png' });
+    headMock.mockResolvedValue({
+      ContentLength: 1000,
+      ContentType: 'image/png',
+    });
     await expect(
       service.confirmImage('u1', 'images/u1/abc.webp'),
     ).rejects.toMatchObject({ code: ErrorCode.INVALID_UPLOAD });
   });
 
   it('confirmImage rejects when larger than 10MB', async () => {
-    headMock.mockResolvedValue({ ContentLength: 11_000_000, ContentType: 'image/webp' });
+    headMock.mockResolvedValue({
+      ContentLength: 11_000_000,
+      ContentType: 'image/webp',
+    });
     await expect(
       service.confirmImage('u1', 'images/u1/abc.webp'),
     ).rejects.toMatchObject({ code: ErrorCode.INVALID_UPLOAD });
   });
 
   it('confirmImage accepts a valid object and returns the key', async () => {
-    headMock.mockResolvedValue({ ContentLength: 1_000, ContentType: 'image/webp' });
-    await expect(service.confirmImage('u1', 'images/u1/abc.webp')).resolves.toBe(
-      'images/u1/abc.webp',
-    );
+    headMock.mockResolvedValue({
+      ContentLength: 1_000,
+      ContentType: 'image/webp',
+    });
+    await expect(
+      service.confirmImage('u1', 'images/u1/abc.webp'),
+    ).resolves.toBe('images/u1/abc.webp');
   });
 });
