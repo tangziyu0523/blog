@@ -3,8 +3,11 @@ import type { ApiError } from "@blog/shared";
 const BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
 
 export class ApiClientError extends Error {
-  constructor(public readonly code: string, message: string) {
+  readonly code: string;
+
+  constructor(code: string, message: string) {
     super(message);
+    this.code = code;
   }
 }
 
