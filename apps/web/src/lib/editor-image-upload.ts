@@ -77,6 +77,26 @@ function imageFilesFrom(list: FileList | undefined | null): File[] {
   return Array.from(list).filter((f) => f.type.startsWith("image/"));
 }
 
+/** Collect image files from a paste, covering both clipboardData.files and
+ *  clipboardData.items (screenshots often appear only in items via getAsFile). */
+function clipboardImageFiles(data: DataTransfer | null | undefined): File[] {
+  if (!data) return [];
+  const out: File[] = [];
+  const seen = new Set<string>();
+  const push = (file: File | null): void => {
+    if (!file || !file.type.startsWith("image/")) return;
+    const sig = `${file.name}:${file.size}:${file.type}`;
+    if (seen.has(sig)) return;
+    seen.add(sig);
+    out.push(file);
+  };
+  for (const f of Array.from(data.files)) push(f);
+  for (const item of Array.from(data.items)) {
+    if (item.kind === "file") push(item.getAsFile());
+  }
+  return out;
+}
+
 export interface ImageUploadOptions {
   onError: (msg: string) => void;
 }
@@ -93,7 +113,7 @@ export const ImageUpload = Extension.create<ImageUploadOptions>({
       new Plugin({
         props: {
           handlePaste(view, event) {
-            const files = imageFilesFrom(event.clipboardData?.files);
+            const files = clipboardImageFiles(event.clipboardData);
             if (files.length === 0) return false;
             event.preventDefault();
             const pos = view.state.selection.from;
