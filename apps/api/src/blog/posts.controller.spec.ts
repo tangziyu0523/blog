@@ -25,7 +25,12 @@ describe('PostsController', () => {
   });
 
   it('list passes sort through to the service', () => {
-    postsMock.list.mockReturnValue({ items: [], total: 0, page: 1, pageSize: 10 });
+    postsMock.list.mockReturnValue({
+      items: [],
+      total: 0,
+      page: 1,
+      pageSize: 10,
+    });
     controller.list(undefined, { sort: 'hot' } as never);
     expect(postsMock.list).toHaveBeenCalledWith(
       expect.objectContaining({ sort: 'hot', mine: false }),
@@ -50,8 +55,13 @@ describe('PostsController', () => {
   });
 
   it('list defaults sort to latest when omitted', () => {
-    postsMock.list.mockReturnValue({ items: [], total: 0, page: 1, pageSize: 10 });
-    controller.list(undefined, {} as never);
+    postsMock.list.mockReturnValue({
+      items: [],
+      total: 0,
+      page: 1,
+      pageSize: 10,
+    });
+    controller.list(undefined, {});
     expect(postsMock.list).toHaveBeenCalledWith(
       expect.objectContaining({ sort: 'latest' }),
     );

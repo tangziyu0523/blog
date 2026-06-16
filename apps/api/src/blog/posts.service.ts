@@ -121,7 +121,7 @@ export class PostsService {
         : Promise.resolve([] as PostWithAuthor[]),
       this.prisma.post.count({ where: { status: 'PUBLISHED' } }),
     ]);
-    const byId = new Map((rows as PostWithAuthor[]).map((r) => [r.id, r]));
+    const byId = new Map(rows.map((r) => [r.id, r]));
     const items = ids
       .map((id) => byId.get(id))
       .filter((r): r is PostWithAuthor => r !== undefined)
