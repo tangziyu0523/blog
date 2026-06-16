@@ -1,6 +1,10 @@
 /** Escape the HTML specials so authored text can never inject markup. */
 export function escapeHtml(s: string): string {
-  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
 }
 
 /** Allow only http(s)/mailto, root-relative, anchors, or scheme-less relative paths. */

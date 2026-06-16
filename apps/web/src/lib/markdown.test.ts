@@ -93,3 +93,18 @@ test('renderProse keeps text paragraphs separate from an image block', () => {
     '<p>hello</p><figure class="post-image"><img src="https://e.com/c.webp" alt="c" loading="lazy"></figure><p>world</p>',
   );
 });
+
+test('renderInline neutralizes a double-quote in image alt (no attribute injection)', () => {
+  assert.equal(
+    renderInline('![x" onerror="alert(1)](https://e.com/i.webp)'),
+    '<img src="https://e.com/i.webp" alt="x&quot; onerror=&quot;alert(1)" loading="lazy">',
+  );
+});
+
+test('renderProse neutralizes a double-quote in a figure image alt', () => {
+  assert.equal(
+    renderProse('![a"b](https://e.com/i.webp)'),
+    '<figure class="post-image"><img src="https://e.com/i.webp" alt="a&quot;b" loading="lazy">' +
+      '</figure>',
+  );
+});
