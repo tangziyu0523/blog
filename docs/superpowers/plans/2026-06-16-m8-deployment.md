@@ -1,5 +1,9 @@
 # M8 Deployment Implementation Plan
 
+> **⚠️ 部分取代（2026-06-17）：无自有域名 + 全程不绑卡。** 最终托管栈改为 **Vercel(web) + Koyeb(api) + Supabase(Postgres+存储) + Upstash(Redis)**，认证 Cookie 改 `SameSite=None`。以 spec 的「修订二」为准：`docs/superpowers/specs/2026-06-16-m8-deployment-design.md`。
+> - **代码任务（已完成）**：Task 1 `/health`、Task 2 Dockerfile、Task 3 `.env.example`、Task 4 CI deploy（已改 Koyeb），外加：跨站 Cookie、S3 region 可配、迁移随容器启动。
+> - **下文 Task 5（Cloudflare R2）→ 改为 Supabase Storage + Upstash**；**Task 6（Railway）→ 改为 Koyeb + Supabase Postgres**；**Task 7（Vercel）基本不变**，仅域名用 `*.vercel.app`、API URL 用 `*.koyeb.app`；**Task 5 的 DNS/自定义域全部跳过**。具体手动步骤以对话/修订二为准。
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Deploy `apps/web` to Vercel and `apps/api` to Railway, with Postgres + Redis managed on Railway and image storage on Cloudflare R2, all under one custom domain so auth cookies stay first-party, with deploys gated on green CI.
