@@ -12,6 +12,9 @@ COPY pnpm-workspace.yaml package.json pnpm-lock.yaml turbo.json tsconfig.base.js
 COPY packages/shared/package.json packages/shared/
 COPY apps/api/package.json apps/api/
 
+# Force all native modules to compile from source (avoids GLIBC_2.38 mismatch)
+ENV npm_config_build_from_source=true
+
 # Full install (native modules compile here; approvals come from root package.json)
 RUN pnpm install --frozen-lockfile
 
