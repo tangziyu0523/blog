@@ -37,4 +37,4 @@ COPY --from=builder /app /app
 
 WORKDIR /app/apps/api
 EXPOSE 3001
-CMD ["node", "dist/main"]
+CMD ["sh", "-c", "pnpm exec prisma migrate deploy && node dist/main"]
