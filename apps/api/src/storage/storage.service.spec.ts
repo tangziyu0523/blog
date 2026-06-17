@@ -25,6 +25,7 @@ const config = {
         S3_ACCESS_KEY: 'x',
         S3_SECRET_KEY: 'y',
         S3_BUCKET: 'blog',
+        S3_REGION: 'us-east-1',
       }) as Record<string, string>
     )[k],
 };

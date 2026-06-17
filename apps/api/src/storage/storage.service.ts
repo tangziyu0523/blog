@@ -24,7 +24,7 @@ export class StorageService {
     this.bucket = config.getOrThrow<string>('S3_BUCKET');
     this.client = new S3Client({
       endpoint: config.getOrThrow<string>('S3_ENDPOINT'),
-      region: 'us-east-1',
+      region: config.getOrThrow<string>('S3_REGION'),
       forcePathStyle: true,
       credentials: {
         accessKeyId: config.getOrThrow<string>('S3_ACCESS_KEY'),
