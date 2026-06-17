@@ -50,6 +50,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
       return;
     }
 
+    console.error('[AllExceptionsFilter]', exception);
     res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
       code: ErrorCode.INTERNAL,
       message: 'Internal server error',
