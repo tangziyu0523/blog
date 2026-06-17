@@ -2,7 +2,17 @@
 
 - 日期：2026-06-16
 - 里程碑：M8（部署，P0）
-- 状态：已确认，待实现
+- 状态：实现中
+
+## 修订（2026-06-17）：无自有域名，改用 SameSite=None
+
+实施时确认**没有自有域名**，故不采用「自有域名 + 共享父域」方案，改为用平台免费域名：web=`*.vercel.app`、api=`*.up.railway.app`。两者跨站，故认证 Cookie 由 `SameSite=Lax`+`domain` 改为 **`SameSite=None; Secure` + host-only（不设 `domain`）**：
+
+- 代码改动（已实现，commit `334f316`）：`cookies.ts` 生产用 `sameSite='none'` 并在无 `COOKIE_DOMAIN` 时省略 `domain`；`auth.controller.ts` 改用可选读取；`env.validation.ts` 的 `COOKIE_DOMAIN` 改为可选。开发/测试（`secure=false`）保持 `Lax`+`domain` 不变。
+- 取舍：**Safari 默认拦截第三方 Cookie**，Safari 用户无法保持登录；主要场景是作者本人登录发文、读者多为匿名浏览，可接受。
+- 安全：`SameSite=None` 削弱 Lax 自带的 CSRF 防护；现状靠 JSON body（触发预检）+ 单一 CORS origin 缓解，后续加表单类接口需另加 CSRF token。
+- 受影响的环境变量见下文「环境变量」节的「修订后取值」说明：生产**不设 `COOKIE_DOMAIN`**，`WEB_ORIGIN` 用 vercel 域，`GITHUB_CALLBACK_URL`/`NEXT_PUBLIC_API_URL` 用 railway 域，对象存储公开 URL 用 R2 的 `pub-<hash>.r2.dev`（无自定义域 `cdn.*`）。
+- 其余决策（R2、不部署 worker、CI 绿灯后部署、Railway pre-deploy 迁移、`/health`）不变。
 
 ## 背景与前提勘误
 
