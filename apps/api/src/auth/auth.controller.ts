@@ -38,7 +38,7 @@ export class AuthController {
   ) {}
 
   private setCookies(res: Response, pair: TokenPair): void {
-    const domain = this.config.getOrThrow<string>('COOKIE_DOMAIN');
+    const domain = this.config.get<string>('COOKIE_DOMAIN');
     const secure = this.config.getOrThrow<string>('NODE_ENV') === 'production';
     res.cookie(
       ACCESS_COOKIE,
@@ -94,7 +94,7 @@ export class AuthController {
   async logout(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
     const { userId, tid } = req.user as RefreshUser;
     await this.tokens.revoke(userId, tid);
-    const domain = this.config.getOrThrow<string>('COOKIE_DOMAIN');
+    const domain = this.config.get<string>('COOKIE_DOMAIN');
     const secure = this.config.getOrThrow<string>('NODE_ENV') === 'production';
     res.clearCookie(
       ACCESS_COOKIE,
