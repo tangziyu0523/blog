@@ -11,7 +11,7 @@
 - 代码改动（已实现，commit `334f316`）：`cookies.ts` 生产用 `sameSite='none'` 并在无 `COOKIE_DOMAIN` 时省略 `domain`；`auth.controller.ts` 改用可选读取；`env.validation.ts` 的 `COOKIE_DOMAIN` 改为可选。开发/测试（`secure=false`）保持 `Lax`+`domain` 不变。
 - 取舍：**Safari 默认拦截第三方 Cookie**，Safari 用户无法保持登录；主要场景是作者本人登录发文、读者多为匿名浏览，可接受。
 - 安全：`SameSite=None` 削弱 Lax 自带的 CSRF 防护；现状靠 JSON body（触发预检）+ 单一 CORS origin 缓解，后续加表单类接口需另加 CSRF token。
-- 受影响的环境变量见下文「环境变量」节的「修订后取值」说明：生产**不设 `COOKIE_DOMAIN`**，`WEB_ORIGIN` 用 vercel 域，`GITHUB_CALLBACK_URL`/`NEXT_PUBLIC_API_URL` 用 railway 域，对象存储公开 URL 用 R2 的 `pub-<hash>.r2.dev`（无自定义域 `cdn.*`）。
+- 受影响的环境变量取值见「修订二」的「最终环境变量」（生产**不设 `COOKIE_DOMAIN`**）。
 - 其余决策（不部署 worker、CI 绿灯后部署、`/health`）不变。
 
 ## 修订二（2026-06-17）：全程不绑卡的托管栈（取代 Railway / R2 方案）
@@ -21,40 +21,43 @@
 | 层 | 方案 | 关键限制 |
 |---|---|---|
 | web | **Vercel**（免费，不绑卡） | 不休眠 |
-| api（NestJS，需常驻跑 SSE） | **Koyeb**（free nano 0.1vCPU/512MB，不绑卡，跑现成 Dockerfile） | 可能冷启动/缩到零，SSE 长连接断开后客户端重连 |
+| api（NestJS，需常驻跑 SSE） | **Render** Free Web Service（Docker，不绑卡） | 闲置 15 分钟休眠、冷启动约 1 分钟；750 实例时/月；SSE 断开后客户端重连 |
 | Postgres | **Supabase**（免费，不绑卡，自带 pgvector） | 500MB；**闲置 7 天暂停**项目 |
 | 对象存储 | **Supabase Storage**（S3 兼容，免费，不绑卡） | 1GB；浏览器直传 CORS 有已知坑（见风险） |
 | Redis | **Upstash**（免费，不绑卡） | 256MB / 50 万命令每月；`rediss://` TLS，ioredis 兼容 |
 
+> 注：原拟用 **Koyeb**，但 2026 年 Koyeb 被 Mistral 收购后新用户不再有免费档（入门 $29/月 + 绑卡），故改用 **Render** 免费 Web Service。
+
 ### 与原方案的差异（需改动）
 
-1. **CI deploy 步骤**：由「Railway CLI / `railway up`」改为 **Koyeb**——用 `koyeb-community/koyeb-actions` 装 CLI，再 `koyeb service redeploy blog/api`，密钥 `KOYEB_TOKEN`。Vercel 部分（deploy hook）不变。
-2. **数据库迁移时机**：Koyeb 无 Railway 那种 pre-deploy 命令。改为**容器启动时先迁移再起服务**：`CMD ["sh","-c","pnpm exec prisma migrate deploy && node dist/main"]`（在 `apps/api` 工作目录，幂等，失败则快速失败不启动）。
+1. **CI deploy 步骤**：由「Railway CLI / `railway up`」改为 **Render Deploy Hook**——CI 里 `curl -X POST $RENDER_DEPLOY_HOOK_URL`（密钥 `RENDER_DEPLOY_HOOK_URL`）。Vercel 部分（deploy hook）不变。两处都用 deploy hook，CI deploy job 仅两条 curl。
+2. **数据库迁移时机**：统一用**容器启动时先迁移再起服务**：`CMD ["sh","-c","pnpm exec prisma migrate deploy && node dist/main"]`（在 `apps/api` 工作目录，幂等，失败则快速失败不启动）。Render 虽提供 Pre-Deploy 命令，但仍采用容器启动迁移以保持平台无关。
 3. **对象存储 region 可配**：`storage.service.ts` 原本硬编码 `region: 'us-east-1'`。Supabase S3 校验 region 必须匹配项目区域，故新增 **`S3_REGION`** 环境变量（默认 `us-east-1`），由 service 读取。`env.validation.ts` 增加可选 `S3_REGION`。
 4. **公开 URL 形态**：`NEXT_PUBLIC_S3_PUBLIC_URL = https://<ref>.supabase.co/storage/v1/object/public/blog-prod`（Supabase 公开桶前缀，代码按 `前缀 + key` 拼接，兼容）。
 5. **S3 endpoint**：`S3_ENDPOINT = https://<ref>.supabase.co/storage/v1/s3`，且需在 Supabase 控制台开启「Enable connection via S3 protocol」并创建 S3 access key/secret。
 
 ### 最终环境变量（取代上文 Railway/R2 的取值）
 
-**Koyeb（api）运行期：**
+**Render（api）运行期：**
 ```
-DATABASE_URL=<Supabase 连接串，建议用 connection pooler 6543 端口>
+DATABASE_URL=<Supabase Session pooler 连接串>
 REDIS_URL=<Upstash rediss:// 连接串>
 NODE_ENV=production            # 触发 secure + SameSite=None
 TRUST_PROXY=1
 WEB_ORIGIN=https://<web>.vercel.app
 # 不设 COOKIE_DOMAIN（host-only，跨站必须）
+# PORT 由 Render 注入，不要手动设
 JWT_ACCESS_SECRET / JWT_REFRESH_SECRET=<32+ 随机串>
 GITHUB_CLIENT_ID / GITHUB_CLIENT_SECRET=<生产 OAuth 应用>
-GITHUB_CALLBACK_URL=https://<api>.koyeb.app/auth/github/callback
-S3_ENDPOINT=https://<ref>.supabase.co/storage/v1/s3
-S3_REGION=<Supabase 项目区域，如 ap-southeast-1>
+GITHUB_CALLBACK_URL=https://<api>.onrender.com/auth/github/callback
+S3_ENDPOINT=https://<ref>.storage.supabase.co/storage/v1/s3
+S3_REGION=<Supabase 项目区域，如 ap-south-1>
 S3_ACCESS_KEY / S3_SECRET_KEY=<Supabase S3 access key>
 S3_BUCKET=blog-prod
 ```
 **Vercel（web）构建期：**
 ```
-NEXT_PUBLIC_API_URL=https://<api>.koyeb.app
+NEXT_PUBLIC_API_URL=https://<api>.onrender.com
 NEXT_PUBLIC_S3_PUBLIC_URL=https://<ref>.supabase.co/storage/v1/object/public/blog-prod
 ```
 
@@ -62,7 +65,7 @@ NEXT_PUBLIC_S3_PUBLIC_URL=https://<ref>.supabase.co/storage/v1/object/public/blo
 
 - **Supabase 7 天闲置暂停**：低流量博客易触发，暂停后 DB 不可用。缓解：加每日定时 ping（Vercel Cron 或 GitHub Actions 定时打一个读 DB 的轻接口）。本里程碑先记录，按需实现。
 - **Supabase Storage 浏览器直传 CORS**：社区有反馈预签名 PUT 跨域配置困难。Task 9 冒烟必须验证；若不通，回退方案：图片改为**经 api 代理上传**（前端 PUT 到 api，api 用服务端凭据写入 Supabase），需额外少量代码，届时另立小任务。
-- **Koyeb 冷启动/缩到零**：首请求变慢、SSE 断连；个人博客可接受，客户端 SSE 自动重连。
+- **Render 闲置休眠**：15 分钟无流量休眠，下次请求冷启动约 1 分钟、SSE 断连；个人博客可接受，客户端 SSE 自动重连。可选缓解：定时 ping 保活（但会消耗 750 实例时/月配额）。
 
 > 下文「目标拓扑」「认证为何此时可用」「对象存储（R2）」「构建与迁移」「CI/CD」「环境变量」等章节中涉及 Railway / R2 / 自定义域的部分，以本修订节为准（已被取代）；`/health`、不部署 worker、CI 绿灯后部署、Dockerfile 多阶段构建、SameSite=None 等结论仍然有效。
 
