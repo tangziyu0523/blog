@@ -2,7 +2,7 @@
 
 # ---- builder ----
 FROM node:22-bookworm AS builder
-RUN apt-get update && apt-get install -y --no-install-recommends python3 make g++ \
+RUN apt-get update && apt-get install -y --no-install-recommends build-essential python3 cmake \
     && rm -rf /var/lib/apt/lists/*
 RUN corepack enable && corepack prepare pnpm@10.31.0 --activate
 WORKDIR /app
